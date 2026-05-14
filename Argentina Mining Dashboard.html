@@ -1,0 +1,1080 @@
+﻿<!DOCTYPE html>
+<!-- saved from url=(0054)file:///C:/Users/S&C%20LLP/mining_dashboard/index.html -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Argentina Mining Dashboard</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link href="https://unpkg.com/tabulator-tables@5.6.1/dist/css/tabulator.min.css" rel="stylesheet">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/tabulator-tables@5.6.1/dist/js/tabulator.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Segoe UI",Arial,sans-serif;background:#f0f2f5;color:#1a1a2e;height:100vh;display:flex;flex-direction:column}
+#header{background:#1a3a5c;color:white;padding:14px 24px;flex-shrink:0}
+#header h1{font-size:1.35rem;font-weight:600;letter-spacing:0.01em}
+#tab-nav{background:white;border-bottom:2px solid #e2e8f0;padding:0 24px;display:flex;flex-shrink:0}
+.tab-btn{padding:11px 22px;border:none;background:none;cursor:pointer;font-size:0.92rem;font-weight:500;color:#64748b;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .15s}
+.tab-btn:hover{color:#1a3a5c}
+.tab-btn.active{color:#1a3a5c;border-bottom-color:#1a3a5c}
+.tab-content{display:none;flex-direction:column;flex:1;overflow:hidden}
+.tab-content.active{display:flex}
+.filter-bar{background:white;padding:10px 20px;border-bottom:1px solid #e2e8f0;display:flex;gap:10px;align-items:center;flex-wrap:wrap;flex-shrink:0;position:relative;z-index:2000}
+.filter-count{margin-left:auto;font-size:0.82rem;color:#64748b;white-space:nowrap}
+.ms-wrap{position:relative}
+.ms-btn{display:flex;align-items:center;gap:6px;padding:6px 12px;border:1px solid #cbd5e1;border-radius:6px;background:white;cursor:pointer;font-size:0.83rem;color:#374151;white-space:nowrap;transition:border-color .15s}
+.ms-btn:hover{border-color:#94a3b8}
+.ms-btn.has-filter{border-color:#1a3a5c;color:#1a3a5c;background:#f0f5ff}
+.ms-badge{background:#1a3a5c;color:white;border-radius:10px;padding:1px 6px;font-size:0.72rem;font-weight:600}
+.ms-badge.all{background:#94a3b8}
+.ms-arrow{font-size:0.7rem;color:#94a3b8}
+.ms-panel{display:none;position:absolute;top:calc(100% + 4px);left:0;background:white;border:1px solid #e2e8f0;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.12);min-width:180px;max-width:240px;z-index:9999;overflow:hidden}
+.ms-panel.open{display:block}
+.ms-controls{display:flex;gap:6px;padding:8px 10px;border-bottom:1px solid #f1f5f9}
+.ms-controls button{flex:1;padding:4px 8px;border:1px solid #e2e8f0;border-radius:4px;background:white;cursor:pointer;font-size:0.78rem;color:#64748b}
+.ms-controls button:hover{background:#f8fafc}
+.ms-search{padding:8px 10px;border-bottom:1px solid #f1f5f9}
+.ms-search input{width:100%;padding:5px 8px;border:1px solid #e2e8f0;border-radius:4px;font-size:0.82rem;color:#374151;outline:none}
+.ms-search input:focus{border-color:#1a3a5c}
+.ms-items{max-height:200px;overflow-y:auto;padding:6px 0}
+.ms-item{display:flex;align-items:center;gap:8px;padding:5px 12px;cursor:pointer;font-size:0.83rem;color:#374151;transition:background .1s}
+.ms-item:hover{background:#f8fafc}
+.ms-item input{cursor:pointer;accent-color:#1a3a5c}
+#map{flex:1;min-height:0}
+.legend{background:white;padding:10px 14px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.15);font-size:12px;line-height:2}
+.legend b{display:block;margin-bottom:2px;font-size:12px}
+.dot{width:11px;height:11px;border-radius:50%;display:inline-block;margin-right:7px;vertical-align:middle}
+#table-wrap{flex:1;overflow:hidden;display:flex;flex-direction:column}
+#projects-table{flex:1;overflow:hidden}
+.tabulator{border:none;font-size:0.85rem;height:100%!important}
+.tabulator .tabulator-header{background:#f8fafc;border-bottom:2px solid #e2e8f0}
+.tabulator .tabulator-col{background:#f8fafc}
+.tabulator .tabulator-col-title{font-weight:600;color:#374151;font-size:0.83rem}
+.tabulator .tabulator-row:hover{background:#f0f7ff!important}
+.tabulator .tabulator-row.tabulator-row-even{background:#fafafa}
+.highlights-wrap{display:flex;flex:1;overflow:hidden}
+.hl-panel{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.hl-panel-left{border-right:2px solid #e2e8f0}
+.hl-panel-hdr{padding:16px 20px 12px;border-bottom:1px solid #e2e8f0;background:white;flex-shrink:0}
+.hl-panel-hdr h2{font-size:1rem;font-weight:600;color:#1a3a5c;margin-bottom:2px}
+.hl-panel-hdr p{font-size:0.8rem;color:#64748b;margin-top:2px}
+.hl-cards{overflow-y:auto;padding:12px 14px;display:flex;flex-direction:column;gap:8px;background:#f0f2f5}
+.hl-card{background:white;border:1px solid #e2e8f0;border-radius:8px;padding:11px 14px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.hl-card-body{flex:1;min-width:0}
+.hl-card-name{font-weight:600;font-size:0.88rem;color:#1a3a5c;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hl-card-meta{font-size:0.78rem;color:#64748b;margin-top:2px}
+.hl-card-ctrl{font-size:0.76rem;color:#374151;margin-top:3px}
+.hl-fi{font-size:0.95rem;font-weight:700;padding:3px 10px;border-radius:6px;white-space:nowrap;flex-shrink:0}
+.hl-fi.green{background:#dcfce7;color:#15803d}
+.hl-fi.orange{background:#ffedd5;color:#c2410c}
+.hl-changes{overflow-y:auto;padding:14px 18px;background:#f0f2f5}
+.hl-section{background:white;border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px;margin-bottom:12px}
+.hl-section-hdr{font-size:0.78rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.06em;padding-bottom:8px;border-bottom:1px solid #e2e8f0;margin-bottom:8px}
+.hl-change-item{padding:7px 0;border-bottom:1px solid #f1f5f9}
+.hl-change-item:last-child{border-bottom:none}
+.hl-change-name{font-size:0.83rem;font-weight:500;color:#1a3a5c}
+.hl-change-detail{font-size:0.78rem;color:#64748b;margin-top:2px}
+.hl-empty{font-size:0.82rem;color:#94a3b8;font-style:italic;padding:4px 0}
+</style>
+</head>
+<body>
+
+<div id="header"><h1>Argentina Mining Projects Dashboard</h1></div>
+
+<div id="tab-nav">
+  <button id="btn-map" class="tab-btn active" onclick="showTab(&#39;map&#39;)">Map</button>
+  <button id="btn-table" class="tab-btn" onclick="showTab(&#39;table&#39;)">Projects Table</button>
+  <button id="btn-highlights" class="tab-btn" onclick="showTab(&#39;highlights&#39;)">Highlights</button>
+</div>
+
+<div id="tab-map" class="tab-content active">
+  <div class="filter-bar">
+    <div class="ms-wrap" id="ms-name-map"></div>
+    <div class="ms-wrap" id="ms-stage">
+    <button class="ms-btn" id="ms-btn-map_stage" onclick="toggleMS(&#39;map_stage&#39;)">
+      Stage <span class="ms-badge all" id="ms-badge-map_stage">All</span>
+      <span class="ms-arrow">▾</span>
+    </button>
+    <div class="ms-panel" id="ms-panel-map_stage">
+      <div class="ms-search">
+        <input type="text" placeholder="Search..." oninput="msSearch(&#39;map_stage&#39;,this.value)">
+      </div>
+      <div class="ms-controls">
+        <button onclick="msSelectAll(&#39;map_stage&#39;,true)">All</button>
+        <button onclick="msSelectAll(&#39;map_stage&#39;,false)">None</button>
+      </div>
+      <div class="ms-items" id="ms-items-map_stage">
+        <label class="ms-item">
+          <input type="checkbox" value="Advanced Exploration" checked="" onchange="msChange(&#39;map_stage&#39;)"> Advanced Exploration
+        </label><label class="ms-item">
+          <input type="checkbox" value="Construction" checked="" onchange="msChange(&#39;map_stage&#39;)"> Construction
+        </label><label class="ms-item">
+          <input type="checkbox" value="Feasibility" checked="" onchange="msChange(&#39;map_stage&#39;)"> Feasibility
+        </label><label class="ms-item">
+          <input type="checkbox" value="Pre-Feasibility" checked="" onchange="msChange(&#39;map_stage&#39;)"> Pre-Feasibility
+        </label><label class="ms-item">
+          <input type="checkbox" value="Production" checked="" onchange="msChange(&#39;map_stage&#39;)"> Production
+        </label>
+      </div>
+    </div></div>
+    <div class="ms-wrap" id="ms-region">
+    <button class="ms-btn" id="ms-btn-map_region" onclick="toggleMS(&#39;map_region&#39;)">
+      Region <span class="ms-badge all" id="ms-badge-map_region">All</span>
+      <span class="ms-arrow">▾</span>
+    </button>
+    <div class="ms-panel" id="ms-panel-map_region">
+      <div class="ms-search">
+        <input type="text" placeholder="Search..." oninput="msSearch(&#39;map_region&#39;,this.value)">
+      </div>
+      <div class="ms-controls">
+        <button onclick="msSelectAll(&#39;map_region&#39;,true)">All</button>
+        <button onclick="msSelectAll(&#39;map_region&#39;,false)">None</button>
+      </div>
+      <div class="ms-items" id="ms-items-map_region">
+        <label class="ms-item">
+          <input type="checkbox" value="Catamarca" checked="" onchange="msChange(&#39;map_region&#39;)"> Catamarca
+        </label><label class="ms-item">
+          <input type="checkbox" value="Chubut" checked="" onchange="msChange(&#39;map_region&#39;)"> Chubut
+        </label><label class="ms-item">
+          <input type="checkbox" value="Córdoba" checked="" onchange="msChange(&#39;map_region&#39;)"> Córdoba
+        </label><label class="ms-item">
+          <input type="checkbox" value="Jujuy" checked="" onchange="msChange(&#39;map_region&#39;)"> Jujuy
+        </label><label class="ms-item">
+          <input type="checkbox" value="Mendoza" checked="" onchange="msChange(&#39;map_region&#39;)"> Mendoza
+        </label><label class="ms-item">
+          <input type="checkbox" value="Neuquén" checked="" onchange="msChange(&#39;map_region&#39;)"> Neuquén
+        </label><label class="ms-item">
+          <input type="checkbox" value="Río Negro" checked="" onchange="msChange(&#39;map_region&#39;)"> Río Negro
+        </label><label class="ms-item">
+          <input type="checkbox" value="Salta" checked="" onchange="msChange(&#39;map_region&#39;)"> Salta
+        </label><label class="ms-item">
+          <input type="checkbox" value="San Juan" checked="" onchange="msChange(&#39;map_region&#39;)"> San Juan
+        </label><label class="ms-item">
+          <input type="checkbox" value="Santa Cruz" checked="" onchange="msChange(&#39;map_region&#39;)"> Santa Cruz
+        </label>
+      </div>
+    </div></div>
+    <div class="ms-wrap" id="ms-mineral">
+    <button class="ms-btn" id="ms-btn-map_mineral" onclick="toggleMS(&#39;map_mineral&#39;)">
+      Mineral <span class="ms-badge all" id="ms-badge-map_mineral">All</span>
+      <span class="ms-arrow">▾</span>
+    </button>
+    <div class="ms-panel" id="ms-panel-map_mineral">
+      <div class="ms-search">
+        <input type="text" placeholder="Search..." oninput="msSearch(&#39;map_mineral&#39;,this.value)">
+      </div>
+      <div class="ms-controls">
+        <button onclick="msSelectAll(&#39;map_mineral&#39;,true)">All</button>
+        <button onclick="msSelectAll(&#39;map_mineral&#39;,false)">None</button>
+      </div>
+      <div class="ms-items" id="ms-items-map_mineral">
+        <label class="ms-item">
+          <input type="checkbox" value="Copper" checked="" onchange="msChange(&#39;map_mineral&#39;)"> Copper
+        </label><label class="ms-item">
+          <input type="checkbox" value="Copper/Gold" checked="" onchange="msChange(&#39;map_mineral&#39;)"> Copper/Gold
+        </label><label class="ms-item">
+          <input type="checkbox" value="Copper/Gold/Silver" checked="" onchange="msChange(&#39;map_mineral&#39;)"> Copper/Gold/Silver
+        </label><label class="ms-item">
+          <input type="checkbox" value="Copper/Gold/Silver/Molybdenum" checked="" onchange="msChange(&#39;map_mineral&#39;)"> Copper/Gold/Silver/Molybdenum
+        </label><label class="ms-item">
+          <input type="checkbox" value="Copper/Silver/Molybdenum" checked="" onchange="msChange(&#39;map_mineral&#39;)"> Copper/Silver/Molybdenum
+        </label><label class="ms-item">
+          <input type="checkbox" value="Copper/Uranium" checked="" onchange="msChange(&#39;map_mineral&#39;)"> Copper/Uranium
+        </label><label class="ms-item">
+          <input type="checkbox" value="Gold" checked="" onchange="msChange(&#39;map_mineral&#39;)"> Gold
+        </label><label class="ms-item">
+          <input type="checkbox" value="Gold/Silver" checked="" onchange="msChange(&#39;map_mineral&#39;)"> Gold/Silver
+        </label><label class="ms-item">
+          <input type="checkbox" value="Gold/Zinc/Silver" checked="" onchange="msChange(&#39;map_mineral&#39;)"> Gold/Zinc/Silver
+        </label><label class="ms-item">
+          <input type="checkbox" value="Lead/Silver/Zinc" checked="" onchange="msChange(&#39;map_mineral&#39;)"> Lead/Silver/Zinc
+        </label><label class="ms-item">
+          <input type="checkbox" value="Lithium" checked="" onchange="msChange(&#39;map_mineral&#39;)"> Lithium
+        </label><label class="ms-item">
+          <input type="checkbox" value="Silver" checked="" onchange="msChange(&#39;map_mineral&#39;)"> Silver
+        </label><label class="ms-item">
+          <input type="checkbox" value="Silver/Gold" checked="" onchange="msChange(&#39;map_mineral&#39;)"> Silver/Gold
+        </label><label class="ms-item">
+          <input type="checkbox" value="Silver/Lead/Zinc" checked="" onchange="msChange(&#39;map_mineral&#39;)"> Silver/Lead/Zinc
+        </label><label class="ms-item">
+          <input type="checkbox" value="Uranium" checked="" onchange="msChange(&#39;map_mineral&#39;)"> Uranium
+        </label><label class="ms-item">
+          <input type="checkbox" value="Uranium/Vanadium" checked="" onchange="msChange(&#39;map_mineral&#39;)"> Uranium/Vanadium
+        </label>
+      </div>
+    </div></div>
+    <div class="ms-wrap" id="ms-controller">
+    <button class="ms-btn" id="ms-btn-map_controller" onclick="toggleMS(&#39;map_controller&#39;)">
+      Controller <span class="ms-badge all" id="ms-badge-map_controller">All</span>
+      <span class="ms-arrow">▾</span>
+    </button>
+    <div class="ms-panel" id="ms-panel-map_controller">
+      <div class="ms-search">
+        <input type="text" placeholder="Search..." oninput="msSearch(&#39;map_controller&#39;,this.value)">
+      </div>
+      <div class="ms-controls">
+        <button onclick="msSelectAll(&#39;map_controller&#39;,true)">All</button>
+        <button onclick="msSelectAll(&#39;map_controller&#39;,false)">None</button>
+      </div>
+      <div class="ms-items" id="ms-items-map_controller">
+        <label class="ms-item">
+          <input type="checkbox" value="AbraSilver Resource Corp." checked="" onchange="msChange(&#39;map_controller&#39;)"> AbraSilver Resource Corp.
+        </label><label class="ms-item">
+          <input type="checkbox" value="Advantage Lithium Argentina" checked="" onchange="msChange(&#39;map_controller&#39;)"> Advantage Lithium Argentina
+        </label><label class="ms-item">
+          <input type="checkbox" value="Albemarle Corporation" checked="" onchange="msChange(&#39;map_controller&#39;)"> Albemarle Corporation
+        </label><label class="ms-item">
+          <input type="checkbox" value="Aldebaran Resources" checked="" onchange="msChange(&#39;map_controller&#39;)"> Aldebaran Resources
+        </label><label class="ms-item">
+          <input type="checkbox" value="American Salars Lithium" checked="" onchange="msChange(&#39;map_controller&#39;)"> American Salars Lithium
+        </label><label class="ms-item">
+          <input type="checkbox" value="AngloGold Ashanti (92.5%) / Fomicruz S.E. (7.5%)" checked="" onchange="msChange(&#39;map_controller&#39;)"> AngloGold Ashanti (92.5%) / Fomicruz S.E. (7.5%)
+        </label><label class="ms-item">
+          <input type="checkbox" value="Antofalla Minerals" checked="" onchange="msChange(&#39;map_controller&#39;)"> Antofalla Minerals
+        </label><label class="ms-item">
+          <input type="checkbox" value="Argentina Lithium &amp; Energy Corp" checked="" onchange="msChange(&#39;map_controller&#39;)"> Argentina Lithium &amp; Energy Corp
+        </label><label class="ms-item">
+          <input type="checkbox" value="Argosy Minerals" checked="" onchange="msChange(&#39;map_controller&#39;)"> Argosy Minerals
+        </label><label class="ms-item">
+          <input type="checkbox" value="Austral Gold Limited" checked="" onchange="msChange(&#39;map_controller&#39;)"> Austral Gold Limited
+        </label><label class="ms-item">
+          <input type="checkbox" value="Austroid Corp." checked="" onchange="msChange(&#39;map_controller&#39;)"> Austroid Corp.
+        </label><label class="ms-item">
+          <input type="checkbox" value="Barrick Gold" checked="" onchange="msChange(&#39;map_controller&#39;)"> Barrick Gold
+        </label><label class="ms-item">
+          <input type="checkbox" value="Barrick Mining Corporation" checked="" onchange="msChange(&#39;map_controller&#39;)"> Barrick Mining Corporation
+        </label><label class="ms-item">
+          <input type="checkbox" value="Blue Sky Uranium" checked="" onchange="msChange(&#39;map_controller&#39;)"> Blue Sky Uranium
+        </label><label class="ms-item">
+          <input type="checkbox" value="CAMYEN SE" checked="" onchange="msChange(&#39;map_controller&#39;)"> CAMYEN SE
+        </label><label class="ms-item">
+          <input type="checkbox" value="CNEA" checked="" onchange="msChange(&#39;map_controller&#39;)"> CNEA
+        </label><label class="ms-item">
+          <input type="checkbox" value="Castañeda N. Rodrigo" checked="" onchange="msChange(&#39;map_controller&#39;)"> Castañeda N. Rodrigo
+        </label><label class="ms-item">
+          <input type="checkbox" value="Cerrado Gold" checked="" onchange="msChange(&#39;map_controller&#39;)"> Cerrado Gold
+        </label><label class="ms-item">
+          <input type="checkbox" value="Cerrado Gold Inc." checked="" onchange="msChange(&#39;map_controller&#39;)"> Cerrado Gold Inc.
+        </label><label class="ms-item">
+          <input type="checkbox" value="Challenger Gold Ltd." checked="" onchange="msChange(&#39;map_controller&#39;)"> Challenger Gold Ltd.
+        </label><label class="ms-item">
+          <input type="checkbox" value="Corriente Argentina" checked="" onchange="msChange(&#39;map_controller&#39;)"> Corriente Argentina
+        </label><label class="ms-item">
+          <input type="checkbox" value="Cosmos Minerals" checked="" onchange="msChange(&#39;map_controller&#39;)"> Cosmos Minerals
+        </label><label class="ms-item">
+          <input type="checkbox" value="Elevado Gold" checked="" onchange="msChange(&#39;map_controller&#39;)"> Elevado Gold
+        </label><label class="ms-item">
+          <input type="checkbox" value="Eramet" checked="" onchange="msChange(&#39;map_controller&#39;)"> Eramet
+        </label><label class="ms-item">
+          <input type="checkbox" value="Eris LLC" checked="" onchange="msChange(&#39;map_controller&#39;)"> Eris LLC
+        </label><label class="ms-item">
+          <input type="checkbox" value="Espíritu de los Andes" checked="" onchange="msChange(&#39;map_controller&#39;)"> Espíritu de los Andes
+        </label><label class="ms-item">
+          <input type="checkbox" value="Everlight Resources" checked="" onchange="msChange(&#39;map_controller&#39;)"> Everlight Resources
+        </label><label class="ms-item">
+          <input type="checkbox" value="First Quantum Minerals Ltd." checked="" onchange="msChange(&#39;map_controller&#39;)"> First Quantum Minerals Ltd.
+        </label><label class="ms-item">
+          <input type="checkbox" value="Fortescue" checked="" onchange="msChange(&#39;map_controller&#39;)"> Fortescue
+        </label><label class="ms-item">
+          <input type="checkbox" value="Fortuna Mining Corp." checked="" onchange="msChange(&#39;map_controller&#39;)"> Fortuna Mining Corp.
+        </label><label class="ms-item">
+          <input type="checkbox" value="Freedonia Mining" checked="" onchange="msChange(&#39;map_controller&#39;)"> Freedonia Mining
+        </label><label class="ms-item">
+          <input type="checkbox" value="Fuyang Mingjin New Energy" checked="" onchange="msChange(&#39;map_controller&#39;)"> Fuyang Mingjin New Energy
+        </label><label class="ms-item">
+          <input type="checkbox" value="Galan Lithium Limited" checked="" onchange="msChange(&#39;map_controller&#39;)"> Galan Lithium Limited
+        </label><label class="ms-item">
+          <input type="checkbox" value="Ganfeng Lithium" checked="" onchange="msChange(&#39;map_controller&#39;)"> Ganfeng Lithium
+        </label><label class="ms-item">
+          <input type="checkbox" value="Ganfeng Lithium (46.7%) / Lithium Argentina (44.8%) / JEMSE (8.5%)" checked="" onchange="msChange(&#39;map_controller&#39;)"> Ganfeng Lithium (46.7%) / Lithium Argentina (44.8%) / JEMSE (8.5%)
+        </label><label class="ms-item">
+          <input type="checkbox" value="Ganfeng Lithium (67%) / Lithium Argentina (33%)" checked="" onchange="msChange(&#39;map_controller&#39;)"> Ganfeng Lithium (67%) / Lithium Argentina (33%)
+        </label><label class="ms-item">
+          <input type="checkbox" value="Ganfeng Lithium Co., Ltd." checked="" onchange="msChange(&#39;map_controller&#39;)"> Ganfeng Lithium Co., Ltd.
+        </label><label class="ms-item">
+          <input type="checkbox" value="Gasmarra Minería" checked="" onchange="msChange(&#39;map_controller&#39;)"> Gasmarra Minería
+        </label><label class="ms-item">
+          <input type="checkbox" value="Glencore Plc." checked="" onchange="msChange(&#39;map_controller&#39;)"> Glencore Plc.
+        </label><label class="ms-item">
+          <input type="checkbox" value="Golden Arrow Resources" checked="" onchange="msChange(&#39;map_controller&#39;)"> Golden Arrow Resources
+        </label><label class="ms-item">
+          <input type="checkbox" value="Grupo Integra" checked="" onchange="msChange(&#39;map_controller&#39;)"> Grupo Integra
+        </label><label class="ms-item">
+          <input type="checkbox" value="Hanaq Group" checked="" onchange="msChange(&#39;map_controller&#39;)"> Hanaq Group
+        </label><label class="ms-item">
+          <input type="checkbox" value="Hochschild Mining" checked="" onchange="msChange(&#39;map_controller&#39;)"> Hochschild Mining
+        </label><label class="ms-item">
+          <input type="checkbox" value="Hochschild Mining (51%) / McEwen Mining (49%)" checked="" onchange="msChange(&#39;map_controller&#39;)"> Hochschild Mining (51%) / McEwen Mining (49%)
+        </label><label class="ms-item">
+          <input type="checkbox" value="International Iconic Gold" checked="" onchange="msChange(&#39;map_controller&#39;)"> International Iconic Gold
+        </label><label class="ms-item">
+          <input type="checkbox" value="Lake Resources (75%) / Lilac Solutions (25%)" checked="" onchange="msChange(&#39;map_controller&#39;)"> Lake Resources (75%) / Lilac Solutions (25%)
+        </label><label class="ms-item">
+          <input type="checkbox" value="Lithium Chile" checked="" onchange="msChange(&#39;map_controller&#39;)"> Lithium Chile
+        </label><label class="ms-item">
+          <input type="checkbox" value="Lithium Chile (80%) / SMG SRL (20%)" checked="" onchange="msChange(&#39;map_controller&#39;)"> Lithium Chile (80%) / SMG SRL (20%)
+        </label><label class="ms-item">
+          <input type="checkbox" value="Lithium Energi Argentina" checked="" onchange="msChange(&#39;map_controller&#39;)"> Lithium Energi Argentina
+        </label><label class="ms-item">
+          <input type="checkbox" value="Lithium Energy" checked="" onchange="msChange(&#39;map_controller&#39;)"> Lithium Energy
+        </label><label class="ms-item">
+          <input type="checkbox" value="Lithium Power International" checked="" onchange="msChange(&#39;map_controller&#39;)"> Lithium Power International
+        </label><label class="ms-item">
+          <input type="checkbox" value="Lithium S. Corporation" checked="" onchange="msChange(&#39;map_controller&#39;)"> Lithium S. Corporation
+        </label><label class="ms-item">
+          <input type="checkbox" value="Lundin Mining (50%) / BHP Group (50%)" checked="" onchange="msChange(&#39;map_controller&#39;)"> Lundin Mining (50%) / BHP Group (50%)
+        </label><label class="ms-item">
+          <input type="checkbox" value="MOM Mining SRL" checked="" onchange="msChange(&#39;map_controller&#39;)"> MOM Mining SRL
+        </label><label class="ms-item">
+          <input type="checkbox" value="Mansfield Minera" checked="" onchange="msChange(&#39;map_controller&#39;)"> Mansfield Minera
+        </label><label class="ms-item">
+          <input type="checkbox" value="McEwen Mining (47.7%) / Stellantis (19.4%)" checked="" onchange="msChange(&#39;map_controller&#39;)"> McEwen Mining (47.7%) / Stellantis (19.4%)
+        </label><label class="ms-item">
+          <input type="checkbox" value="Minera El Toro" checked="" onchange="msChange(&#39;map_controller&#39;)"> Minera El Toro
+        </label><label class="ms-item">
+          <input type="checkbox" value="Minsud Resources Corp" checked="" onchange="msChange(&#39;map_controller&#39;)"> Minsud Resources Corp
+        </label><label class="ms-item">
+          <input type="checkbox" value="Mirasol Resources" checked="" onchange="msChange(&#39;map_controller&#39;)"> Mirasol Resources
+        </label><label class="ms-item">
+          <input type="checkbox" value="Mogotes Metals" checked="" onchange="msChange(&#39;map_controller&#39;)"> Mogotes Metals
+        </label><label class="ms-item">
+          <input type="checkbox" value="Mármol Víctor Fernando" checked="" onchange="msChange(&#39;map_controller&#39;)"> Mármol Víctor Fernando
+        </label><label class="ms-item">
+          <input type="checkbox" value="NGEx Minerals" checked="" onchange="msChange(&#39;map_controller&#39;)"> NGEx Minerals
+        </label><label class="ms-item">
+          <input type="checkbox" value="Newmont" checked="" onchange="msChange(&#39;map_controller&#39;)"> Newmont
+        </label><label class="ms-item">
+          <input type="checkbox" value="Noa Lithium Brines" checked="" onchange="msChange(&#39;map_controller&#39;)"> Noa Lithium Brines
+        </label><label class="ms-item">
+          <input type="checkbox" value="Noa Lithium Brines / Pluspetrol" checked="" onchange="msChange(&#39;map_controller&#39;)"> Noa Lithium Brines / Pluspetrol
+        </label><label class="ms-item">
+          <input type="checkbox" value="POSCO Holdings Inc." checked="" onchange="msChange(&#39;map_controller&#39;)"> POSCO Holdings Inc.
+        </label><label class="ms-item">
+          <input type="checkbox" value="Pan American Silver" checked="" onchange="msChange(&#39;map_controller&#39;)"> Pan American Silver
+        </label><label class="ms-item">
+          <input type="checkbox" value="Pan American Silver Corp." checked="" onchange="msChange(&#39;map_controller&#39;)"> Pan American Silver Corp.
+        </label><label class="ms-item">
+          <input type="checkbox" value="Pan American Silver Corp. (60%) / CAM (40%)" checked="" onchange="msChange(&#39;map_controller&#39;)"> Pan American Silver Corp. (60%) / CAM (40%)
+        </label><label class="ms-item">
+          <input type="checkbox" value="Patagonia Gold" checked="" onchange="msChange(&#39;map_controller&#39;)"> Patagonia Gold
+        </label><label class="ms-item">
+          <input type="checkbox" value="Power Minerals" checked="" onchange="msChange(&#39;map_controller&#39;)"> Power Minerals
+        </label><label class="ms-item">
+          <input type="checkbox" value="Pursuit Minerals" checked="" onchange="msChange(&#39;map_controller&#39;)"> Pursuit Minerals
+        </label><label class="ms-item">
+          <input type="checkbox" value="Revotech Asia Ltd. (46%) / Xizang Zhufeng Resources (45%)" checked="" onchange="msChange(&#39;map_controller&#39;)"> Revotech Asia Ltd. (46%) / Xizang Zhufeng Resources (45%)
+        </label><label class="ms-item">
+          <input type="checkbox" value="Rodriguez Silvia Rene" checked="" onchange="msChange(&#39;map_controller&#39;)"> Rodriguez Silvia Rene
+        </label><label class="ms-item">
+          <input type="checkbox" value="Ruben Omar Diego" checked="" onchange="msChange(&#39;map_controller&#39;)"> Ruben Omar Diego
+        </label><label class="ms-item">
+          <input type="checkbox" value="Río Tinto Group" checked="" onchange="msChange(&#39;map_controller&#39;)"> Río Tinto Group
+        </label><label class="ms-item">
+          <input type="checkbox" value="Río Tinto Group (66.5%) / Toyota Tsusho (25%) / JEMSE (8.5%)" checked="" onchange="msChange(&#39;map_controller&#39;)"> Río Tinto Group (66.5%) / Toyota Tsusho (25%) / JEMSE (8.5%)
+        </label><label class="ms-item">
+          <input type="checkbox" value="SSR Mining Inc." checked="" onchange="msChange(&#39;map_controller&#39;)"> SSR Mining Inc.
+        </label><label class="ms-item">
+          <input type="checkbox" value="Silver Sands Resources" checked="" onchange="msChange(&#39;map_controller&#39;)"> Silver Sands Resources
+        </label><label class="ms-item">
+          <input type="checkbox" value="South32" checked="" onchange="msChange(&#39;map_controller&#39;)"> South32
+        </label><label class="ms-item">
+          <input type="checkbox" value="Southern Copper Argentina" checked="" onchange="msChange(&#39;map_controller&#39;)"> Southern Copper Argentina
+        </label><label class="ms-item">
+          <input type="checkbox" value="Studer Simon David" checked="" onchange="msChange(&#39;map_controller&#39;)"> Studer Simon David
+        </label><label class="ms-item">
+          <input type="checkbox" value="Tres Cerros Exploraciones" checked="" onchange="msChange(&#39;map_controller&#39;)"> Tres Cerros Exploraciones
+        </label><label class="ms-item">
+          <input type="checkbox" value="Ultra Lithium" checked="" onchange="msChange(&#39;map_controller&#39;)"> Ultra Lithium
+        </label><label class="ms-item">
+          <input type="checkbox" value="Unico Silver" checked="" onchange="msChange(&#39;map_controller&#39;)"> Unico Silver
+        </label><label class="ms-item">
+          <input type="checkbox" value="UrAmérica" checked="" onchange="msChange(&#39;map_controller&#39;)"> UrAmérica
+        </label><label class="ms-item">
+          <input type="checkbox" value="Xizang Zhufeng Resources" checked="" onchange="msChange(&#39;map_controller&#39;)"> Xizang Zhufeng Resources
+        </label><label class="ms-item">
+          <input type="checkbox" value="YMAD" checked="" onchange="msChange(&#39;map_controller&#39;)"> YMAD
+        </label><label class="ms-item">
+          <input type="checkbox" value="Zijin Mining Company" checked="" onchange="msChange(&#39;map_controller&#39;)"> Zijin Mining Company
+        </label><label class="ms-item">
+          <input type="checkbox" value="Zonda Metals / Grupo Alberdi" checked="" onchange="msChange(&#39;map_controller&#39;)"> Zonda Metals / Grupo Alberdi
+        </label>
+      </div>
+    </div></div>
+    <span class="filter-count" id="map-count">113 of 113 projects</span>
+  </div>
+  <div id="map" class="leaflet-container leaflet-touch leaflet-retina leaflet-fade-anim leaflet-grab leaflet-touch-drag leaflet-touch-zoom" tabindex="0" style="position: relative;"><div class="leaflet-pane leaflet-map-pane" style="transform: translate3d(0px, 0px, 0px);"><div class="leaflet-pane leaflet-tile-pane"><div class="leaflet-layer " style="z-index: 1; opacity: 1;"><div class="leaflet-tile-container leaflet-zoom-animated" style="z-index: 18; transform: translate3d(0px, 0px, 0px) scale(1);"><img alt="" src="./Argentina Mining Dashboard_files/9@2x.png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(335px, 11px, 0px); opacity: 1;"><img alt="" src="./Argentina Mining Dashboard_files/9@2x(1).png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(591px, 11px, 0px); opacity: 1;"><img alt="" src="./Argentina Mining Dashboard_files/8@2x.png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(335px, -245px, 0px); opacity: 1;"><img alt="" src="./Argentina Mining Dashboard_files/8@2x(1).png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(591px, -245px, 0px); opacity: 1;"><img alt="" src="./Argentina Mining Dashboard_files/10@2x.png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(335px, 267px, 0px); opacity: 1;"><img alt="" src="./Argentina Mining Dashboard_files/10@2x(1).png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(591px, 267px, 0px); opacity: 1;"><img alt="" src="./Argentina Mining Dashboard_files/9@2x(2).png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(79px, 11px, 0px); opacity: 1;"><img alt="" src="./Argentina Mining Dashboard_files/9@2x(3).png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(847px, 11px, 0px); opacity: 1;"><img alt="" src="./Argentina Mining Dashboard_files/8@2x(2).png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(79px, -245px, 0px); opacity: 1;"><img alt="" src="./Argentina Mining Dashboard_files/8@2x(3).png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(847px, -245px, 0px); opacity: 1;"><img alt="" src="./Argentina Mining Dashboard_files/10@2x(2).png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(79px, 267px, 0px); opacity: 1;"><img alt="" src="./Argentina Mining Dashboard_files/10@2x(3).png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(847px, 267px, 0px); opacity: 1;"><img alt="" src="./Argentina Mining Dashboard_files/9@2x(4).png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(-177px, 11px, 0px); opacity: 1;"><img alt="" src="./Argentina Mining Dashboard_files/9@2x(5).png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(1103px, 11px, 0px); opacity: 1;"><img alt="" src="./Argentina Mining Dashboard_files/8@2x(4).png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(-177px, -245px, 0px); opacity: 1;"><img alt="" src="./Argentina Mining Dashboard_files/8@2x(5).png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(1103px, -245px, 0px); opacity: 1;"><img alt="" src="./Argentina Mining Dashboard_files/10@2x(4).png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(-177px, 267px, 0px); opacity: 1;"><img alt="" src="./Argentina Mining Dashboard_files/10@2x(5).png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(1103px, 267px, 0px); opacity: 1;"></div></div></div><div class="leaflet-pane leaflet-overlay-pane"><svg pointer-events="none" class="leaflet-zoom-animated" width="1526" height="536" viewBox="-127 -45 1526 536" style="transform: translate3d(-127px, -45px, 0px);"><g><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#f4a261" fill-opacity="0.9" fill-rule="evenodd" d="M550,136a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#f4a261" fill-opacity="0.9" fill-rule="evenodd" d="M553,127a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#f4a261" fill-opacity="0.9" fill-rule="evenodd" d="M597,79a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#f4a261" fill-opacity="0.9" fill-rule="evenodd" d="M580,44a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#f4a261" fill-opacity="0.9" fill-rule="evenodd" d="M584,68a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#f4a261" fill-opacity="0.9" fill-rule="evenodd" d="M592,44a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#f4a261" fill-opacity="0.9" fill-rule="evenodd" d="M541,296a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#f4a261" fill-opacity="0.9" fill-rule="evenodd" d="M591,53a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#f4a261" fill-opacity="0.9" fill-rule="evenodd" d="M601,57a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#f4a261" fill-opacity="0.9" fill-rule="evenodd" d="M571,175a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#e9c46a" fill-opacity="0.9" fill-rule="evenodd" d="M558,93a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#e9c46a" fill-opacity="0.9" fill-rule="evenodd" d="M561,143a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#e9c46a" fill-opacity="0.9" fill-rule="evenodd" d="M581,46a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#e9c46a" fill-opacity="0.9" fill-rule="evenodd" d="M591,33a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#e9c46a" fill-opacity="0.9" fill-rule="evenodd" d="M592,30a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#e9c46a" fill-opacity="0.9" fill-rule="evenodd" d="M566,123a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 " aria-describedby="leaflet-tooltip-425"></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#457b9d" fill-opacity="0.9" fill-rule="evenodd" d="M607,46a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#457b9d" fill-opacity="0.9" fill-rule="evenodd" d="M607,46a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#457b9d" fill-opacity="0.9" fill-rule="evenodd" d="M590,81a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#457b9d" fill-opacity="0.9" fill-rule="evenodd" d="M607,46a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#457b9d" fill-opacity="0.9" fill-rule="evenodd" d="M607,46a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#457b9d" fill-opacity="0.9" fill-rule="evenodd" d="M572,133a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#457b9d" fill-opacity="0.9" fill-rule="evenodd" d="M607,46a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#457b9d" fill-opacity="0.9" fill-rule="evenodd" d="M572,133a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#457b9d" fill-opacity="0.9" fill-rule="evenodd" d="M607,46a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#457b9d" fill-opacity="0.9" fill-rule="evenodd" d="M572,133a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#457b9d" fill-opacity="0.9" fill-rule="evenodd" d="M607,46a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#457b9d" fill-opacity="0.9" fill-rule="evenodd" d="M572,133a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#457b9d" fill-opacity="0.9" fill-rule="evenodd" d="M607,46a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#457b9d" fill-opacity="0.9" fill-rule="evenodd" d="M555,223a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#457b9d" fill-opacity="0.9" fill-rule="evenodd" d="M572,133a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#457b9d" fill-opacity="0.9" fill-rule="evenodd" d="M564,443a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#457b9d" fill-opacity="0.9" fill-rule="evenodd" d="M564,443a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#457b9d" fill-opacity="0.9" fill-rule="evenodd" d="M572,133a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#457b9d" fill-opacity="0.9" fill-rule="evenodd" d="M572,133a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#457b9d" fill-opacity="0.9" fill-rule="evenodd" d="M564,443a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#457b9d" fill-opacity="0.9" fill-rule="evenodd" d="M564,443a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#457b9d" fill-opacity="0.9" fill-rule="evenodd" d="M564,443a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#457b9d" fill-opacity="0.9" fill-rule="evenodd" d="M572,133a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#457b9d" fill-opacity="0.9" fill-rule="evenodd" d="M564,443a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#457b9d" fill-opacity="0.9" fill-rule="evenodd" d="M564,443a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#457b9d" fill-opacity="0.9" fill-rule="evenodd" d="M572,133a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#457b9d" fill-opacity="0.9" fill-rule="evenodd" d="M583,263a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#457b9d" fill-opacity="0.9" fill-rule="evenodd" d="M590,81a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#457b9d" fill-opacity="0.9" fill-rule="evenodd" d="M590,81a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#457b9d" fill-opacity="0.9" fill-rule="evenodd" d="M572,133a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#457b9d" fill-opacity="0.9" fill-rule="evenodd" d="M607,46a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#457b9d" fill-opacity="0.9" fill-rule="evenodd" d="M607,46a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#457b9d" fill-opacity="0.9" fill-rule="evenodd" d="M607,46a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#457b9d" fill-opacity="0.9" fill-rule="evenodd" d="M607,46a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#457b9d" fill-opacity="0.9" fill-rule="evenodd" d="M607,46a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#457b9d" fill-opacity="0.9" fill-rule="evenodd" d="M607,46a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#457b9d" fill-opacity="0.9" fill-rule="evenodd" d="M607,46a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#457b9d" fill-opacity="0.9" fill-rule="evenodd" d="M607,46a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#457b9d" fill-opacity="0.9" fill-rule="evenodd" d="M607,46a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#457b9d" fill-opacity="0.9" fill-rule="evenodd" d="M590,81a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#457b9d" fill-opacity="0.9" fill-rule="evenodd" d="M607,46a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#457b9d" fill-opacity="0.9" fill-rule="evenodd" d="M590,81a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#457b9d" fill-opacity="0.9" fill-rule="evenodd" d="M607,46a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#457b9d" fill-opacity="0.9" fill-rule="evenodd" d="M607,46a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#457b9d" fill-opacity="0.9" fill-rule="evenodd" d="M607,46a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#457b9d" fill-opacity="0.9" fill-rule="evenodd" d="M607,46a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#457b9d" fill-opacity="0.9" fill-rule="evenodd" d="M607,46a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#457b9d" fill-opacity="0.9" fill-rule="evenodd" d="M607,46a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#457b9d" fill-opacity="0.9" fill-rule="evenodd" d="M607,46a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#457b9d" fill-opacity="0.9" fill-rule="evenodd" d="M590,81a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#457b9d" fill-opacity="0.9" fill-rule="evenodd" d="M607,46a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#457b9d" fill-opacity="0.9" fill-rule="evenodd" d="M607,46a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#457b9d" fill-opacity="0.9" fill-rule="evenodd" d="M590,81a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#457b9d" fill-opacity="0.9" fill-rule="evenodd" d="M603,24a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#457b9d" fill-opacity="0.9" fill-rule="evenodd" d="M607,46a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#457b9d" fill-opacity="0.9" fill-rule="evenodd" d="M590,81a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#457b9d" fill-opacity="0.9" fill-rule="evenodd" d="M607,46a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#457b9d" fill-opacity="0.9" fill-rule="evenodd" d="M583,263a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#457b9d" fill-opacity="0.9" fill-rule="evenodd" d="M564,443a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#457b9d" fill-opacity="0.9" fill-rule="evenodd" d="M564,443a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#457b9d" fill-opacity="0.9" fill-rule="evenodd" d="M583,263a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#457b9d" fill-opacity="0.9" fill-rule="evenodd" d="M610,303a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#457b9d" fill-opacity="0.9" fill-rule="evenodd" d="M610,303a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#457b9d" fill-opacity="0.9" fill-rule="evenodd" d="M610,303a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#2dc653" fill-opacity="0.9" fill-rule="evenodd" d="M555,105a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#2dc653" fill-opacity="0.9" fill-rule="evenodd" d="M548,353a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 " aria-describedby="leaflet-tooltip-427"></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#2dc653" fill-opacity="0.9" fill-rule="evenodd" d="M571,384a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 " aria-describedby="leaflet-tooltip-424"></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#2dc653" fill-opacity="0.9" fill-rule="evenodd" d="M594,44a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#2dc653" fill-opacity="0.9" fill-rule="evenodd" d="M575,375a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 " aria-describedby="leaflet-tooltip-422"></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#2dc653" fill-opacity="0.9" fill-rule="evenodd" d="M568,121a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 " aria-describedby="leaflet-tooltip-403"></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#2dc653" fill-opacity="0.9" fill-rule="evenodd" d="M560,148a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#2dc653" fill-opacity="0.9" fill-rule="evenodd" d="M591,82a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 " aria-describedby="leaflet-tooltip-420"></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#2dc653" fill-opacity="0.9" fill-rule="evenodd" d="M564,443a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#2dc653" fill-opacity="0.9" fill-rule="evenodd" d="M564,443a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#2dc653" fill-opacity="0.9" fill-rule="evenodd" d="M564,443a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#2dc653" fill-opacity="0.9" fill-rule="evenodd" d="M564,443a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 " aria-describedby="leaflet-tooltip-423"></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#2dc653" fill-opacity="0.9" fill-rule="evenodd" d="M603,24a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#2dc653" fill-opacity="0.9" fill-rule="evenodd" d="M621,132a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#2dc653" fill-opacity="0.9" fill-rule="evenodd" d="M607,46a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 " aria-describedby="leaflet-tooltip-426"></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#2dc653" fill-opacity="0.9" fill-rule="evenodd" d="M594,20a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#2dc653" fill-opacity="0.9" fill-rule="evenodd" d="M580,359a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 " aria-describedby="leaflet-tooltip-428"></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#2dc653" fill-opacity="0.9" fill-rule="evenodd" d="M603,24a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#2dc653" fill-opacity="0.9" fill-rule="evenodd" d="M603,26a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#2dc653" fill-opacity="0.9" fill-rule="evenodd" d="M589,34a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#2dc653" fill-opacity="0.9" fill-rule="evenodd" d="M588,41a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#2dc653" fill-opacity="0.9" fill-rule="evenodd" d="M585,65a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#2dc653" fill-opacity="0.9" fill-rule="evenodd" d="M583,55a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#2dc653" fill-opacity="0.9" fill-rule="evenodd" d="M591,32a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#2dc653" fill-opacity="0.9" fill-rule="evenodd" d="M585,46a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 " aria-describedby="leaflet-tooltip-430"></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#2dc653" fill-opacity="0.9" fill-rule="evenodd" d="M577,73a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#e76f51" fill-opacity="0.9" fill-rule="evenodd" d="M561,94a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#e76f51" fill-opacity="0.9" fill-rule="evenodd" d="M556,273a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#e76f51" fill-opacity="0.9" fill-rule="evenodd" d="M583,62a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 " aria-describedby="leaflet-tooltip-431"></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#e76f51" fill-opacity="0.9" fill-rule="evenodd" d="M589,25a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#e76f51" fill-opacity="0.9" fill-rule="evenodd" d="M589,43a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#e76f51" fill-opacity="0.9" fill-rule="evenodd" d="M580,71a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 "></path><path class="leaflet-interactive" stroke="white" stroke-opacity="1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="#e76f51" fill-opacity="0.9" fill-rule="evenodd" d="M587,26a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 " aria-describedby="leaflet-tooltip-429"></path></g></svg></div><div class="leaflet-pane leaflet-shadow-pane"></div><div class="leaflet-pane leaflet-marker-pane"></div><div class="leaflet-pane leaflet-tooltip-pane"></div><div class="leaflet-pane leaflet-popup-pane"></div><div class="leaflet-proxy leaflet-zoom-animated"></div></div><div class="leaflet-control-container"><div class="leaflet-top leaflet-left"><div class="leaflet-control-zoom leaflet-bar leaflet-control"><a class="leaflet-control-zoom-in" href="file:///C:/Users/S&amp;C%20LLP/mining_dashboard/index.html#" title="Zoom in" role="button" aria-label="Zoom in" aria-disabled="false"><span aria-hidden="true">+</span></a><a class="leaflet-control-zoom-out leaflet-disabled" href="file:///C:/Users/S&amp;C%20LLP/mining_dashboard/index.html#" title="Zoom out" role="button" aria-label="Zoom out" aria-disabled="true"><span aria-hidden="true">−</span></a></div></div><div class="leaflet-top leaflet-right"></div><div class="leaflet-bottom leaflet-left"><div class="legend leaflet-control"><b>Stage</b><div><span class="dot" style="background:#2dc653"></span>Production</div><div><span class="dot" style="background:#e76f51"></span>Construction</div><div><span class="dot" style="background:#f4a261"></span>Feasibility</div><div><span class="dot" style="background:#e9c46a"></span>Pre-Feasibility</div><div><span class="dot" style="background:#457b9d"></span>Advanced Exploration</div></div></div><div class="leaflet-bottom leaflet-right"><div class="leaflet-control-attribution leaflet-control"><a href="https://leafletjs.com/" title="A JavaScript library for interactive maps"><svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="12" height="8" viewBox="0 0 12 8" class="leaflet-attribution-flag"><path fill="#4C7BE1" d="M0 0h12v4H0z"></path><path fill="#FFD500" d="M0 4h12v3H0z"></path><path fill="#E0BC00" d="M0 7h12v1H0z"></path></svg> Leaflet</a> <span aria-hidden="true">|</span> © OpenStreetMap © CartoDB</div></div></div></div>
+</div>
+
+<div id="tab-table" class="tab-content">
+  <div class="filter-bar">
+    <div class="ms-wrap" id="tbl-name"></div>
+    <div class="ms-wrap" id="tbl-stage">
+    <button class="ms-btn" id="ms-btn-tbl_stage" onclick="toggleMS(&#39;tbl_stage&#39;)">
+      Stage <span class="ms-badge all" id="ms-badge-tbl_stage">All</span>
+      <span class="ms-arrow">▾</span>
+    </button>
+    <div class="ms-panel" id="ms-panel-tbl_stage">
+      <div class="ms-search">
+        <input type="text" placeholder="Search..." oninput="msSearch(&#39;tbl_stage&#39;,this.value)">
+      </div>
+      <div class="ms-controls">
+        <button onclick="msSelectAll(&#39;tbl_stage&#39;,true)">All</button>
+        <button onclick="msSelectAll(&#39;tbl_stage&#39;,false)">None</button>
+      </div>
+      <div class="ms-items" id="ms-items-tbl_stage">
+        <label class="ms-item">
+          <input type="checkbox" value="Advanced Exploration" checked="" onchange="msChange(&#39;tbl_stage&#39;)"> Advanced Exploration
+        </label><label class="ms-item">
+          <input type="checkbox" value="Construction" checked="" onchange="msChange(&#39;tbl_stage&#39;)"> Construction
+        </label><label class="ms-item">
+          <input type="checkbox" value="Feasibility" checked="" onchange="msChange(&#39;tbl_stage&#39;)"> Feasibility
+        </label><label class="ms-item">
+          <input type="checkbox" value="Pre-Feasibility" checked="" onchange="msChange(&#39;tbl_stage&#39;)"> Pre-Feasibility
+        </label><label class="ms-item">
+          <input type="checkbox" value="Production" checked="" onchange="msChange(&#39;tbl_stage&#39;)"> Production
+        </label>
+      </div>
+    </div></div>
+    <div class="ms-wrap" id="tbl-region">
+    <button class="ms-btn" id="ms-btn-tbl_region" onclick="toggleMS(&#39;tbl_region&#39;)">
+      Region <span class="ms-badge all" id="ms-badge-tbl_region">All</span>
+      <span class="ms-arrow">▾</span>
+    </button>
+    <div class="ms-panel" id="ms-panel-tbl_region">
+      <div class="ms-search">
+        <input type="text" placeholder="Search..." oninput="msSearch(&#39;tbl_region&#39;,this.value)">
+      </div>
+      <div class="ms-controls">
+        <button onclick="msSelectAll(&#39;tbl_region&#39;,true)">All</button>
+        <button onclick="msSelectAll(&#39;tbl_region&#39;,false)">None</button>
+      </div>
+      <div class="ms-items" id="ms-items-tbl_region">
+        <label class="ms-item">
+          <input type="checkbox" value="Catamarca" checked="" onchange="msChange(&#39;tbl_region&#39;)"> Catamarca
+        </label><label class="ms-item">
+          <input type="checkbox" value="Chubut" checked="" onchange="msChange(&#39;tbl_region&#39;)"> Chubut
+        </label><label class="ms-item">
+          <input type="checkbox" value="Córdoba" checked="" onchange="msChange(&#39;tbl_region&#39;)"> Córdoba
+        </label><label class="ms-item">
+          <input type="checkbox" value="Jujuy" checked="" onchange="msChange(&#39;tbl_region&#39;)"> Jujuy
+        </label><label class="ms-item">
+          <input type="checkbox" value="Mendoza" checked="" onchange="msChange(&#39;tbl_region&#39;)"> Mendoza
+        </label><label class="ms-item">
+          <input type="checkbox" value="Neuquén" checked="" onchange="msChange(&#39;tbl_region&#39;)"> Neuquén
+        </label><label class="ms-item">
+          <input type="checkbox" value="Río Negro" checked="" onchange="msChange(&#39;tbl_region&#39;)"> Río Negro
+        </label><label class="ms-item">
+          <input type="checkbox" value="Salta" checked="" onchange="msChange(&#39;tbl_region&#39;)"> Salta
+        </label><label class="ms-item">
+          <input type="checkbox" value="San Juan" checked="" onchange="msChange(&#39;tbl_region&#39;)"> San Juan
+        </label><label class="ms-item">
+          <input type="checkbox" value="Santa Cruz" checked="" onchange="msChange(&#39;tbl_region&#39;)"> Santa Cruz
+        </label>
+      </div>
+    </div></div>
+    <div class="ms-wrap" id="tbl-mineral">
+    <button class="ms-btn" id="ms-btn-tbl_mineral" onclick="toggleMS(&#39;tbl_mineral&#39;)">
+      Mineral <span class="ms-badge all" id="ms-badge-tbl_mineral">All</span>
+      <span class="ms-arrow">▾</span>
+    </button>
+    <div class="ms-panel" id="ms-panel-tbl_mineral">
+      <div class="ms-search">
+        <input type="text" placeholder="Search..." oninput="msSearch(&#39;tbl_mineral&#39;,this.value)">
+      </div>
+      <div class="ms-controls">
+        <button onclick="msSelectAll(&#39;tbl_mineral&#39;,true)">All</button>
+        <button onclick="msSelectAll(&#39;tbl_mineral&#39;,false)">None</button>
+      </div>
+      <div class="ms-items" id="ms-items-tbl_mineral">
+        <label class="ms-item">
+          <input type="checkbox" value="Copper" checked="" onchange="msChange(&#39;tbl_mineral&#39;)"> Copper
+        </label><label class="ms-item">
+          <input type="checkbox" value="Copper/Gold" checked="" onchange="msChange(&#39;tbl_mineral&#39;)"> Copper/Gold
+        </label><label class="ms-item">
+          <input type="checkbox" value="Copper/Gold/Silver" checked="" onchange="msChange(&#39;tbl_mineral&#39;)"> Copper/Gold/Silver
+        </label><label class="ms-item">
+          <input type="checkbox" value="Copper/Gold/Silver/Molybdenum" checked="" onchange="msChange(&#39;tbl_mineral&#39;)"> Copper/Gold/Silver/Molybdenum
+        </label><label class="ms-item">
+          <input type="checkbox" value="Copper/Silver/Molybdenum" checked="" onchange="msChange(&#39;tbl_mineral&#39;)"> Copper/Silver/Molybdenum
+        </label><label class="ms-item">
+          <input type="checkbox" value="Copper/Uranium" checked="" onchange="msChange(&#39;tbl_mineral&#39;)"> Copper/Uranium
+        </label><label class="ms-item">
+          <input type="checkbox" value="Gold" checked="" onchange="msChange(&#39;tbl_mineral&#39;)"> Gold
+        </label><label class="ms-item">
+          <input type="checkbox" value="Gold/Silver" checked="" onchange="msChange(&#39;tbl_mineral&#39;)"> Gold/Silver
+        </label><label class="ms-item">
+          <input type="checkbox" value="Gold/Zinc/Silver" checked="" onchange="msChange(&#39;tbl_mineral&#39;)"> Gold/Zinc/Silver
+        </label><label class="ms-item">
+          <input type="checkbox" value="Lead/Silver/Zinc" checked="" onchange="msChange(&#39;tbl_mineral&#39;)"> Lead/Silver/Zinc
+        </label><label class="ms-item">
+          <input type="checkbox" value="Lithium" checked="" onchange="msChange(&#39;tbl_mineral&#39;)"> Lithium
+        </label><label class="ms-item">
+          <input type="checkbox" value="Silver" checked="" onchange="msChange(&#39;tbl_mineral&#39;)"> Silver
+        </label><label class="ms-item">
+          <input type="checkbox" value="Silver/Gold" checked="" onchange="msChange(&#39;tbl_mineral&#39;)"> Silver/Gold
+        </label><label class="ms-item">
+          <input type="checkbox" value="Silver/Lead/Zinc" checked="" onchange="msChange(&#39;tbl_mineral&#39;)"> Silver/Lead/Zinc
+        </label><label class="ms-item">
+          <input type="checkbox" value="Uranium" checked="" onchange="msChange(&#39;tbl_mineral&#39;)"> Uranium
+        </label><label class="ms-item">
+          <input type="checkbox" value="Uranium/Vanadium" checked="" onchange="msChange(&#39;tbl_mineral&#39;)"> Uranium/Vanadium
+        </label>
+      </div>
+    </div></div>
+    <div class="ms-wrap" id="tbl-controller">
+    <button class="ms-btn" id="ms-btn-tbl_controller" onclick="toggleMS(&#39;tbl_controller&#39;)">
+      Controller <span class="ms-badge all" id="ms-badge-tbl_controller">All</span>
+      <span class="ms-arrow">▾</span>
+    </button>
+    <div class="ms-panel" id="ms-panel-tbl_controller">
+      <div class="ms-search">
+        <input type="text" placeholder="Search..." oninput="msSearch(&#39;tbl_controller&#39;,this.value)">
+      </div>
+      <div class="ms-controls">
+        <button onclick="msSelectAll(&#39;tbl_controller&#39;,true)">All</button>
+        <button onclick="msSelectAll(&#39;tbl_controller&#39;,false)">None</button>
+      </div>
+      <div class="ms-items" id="ms-items-tbl_controller">
+        <label class="ms-item">
+          <input type="checkbox" value="AbraSilver Resource Corp." checked="" onchange="msChange(&#39;tbl_controller&#39;)"> AbraSilver Resource Corp.
+        </label><label class="ms-item">
+          <input type="checkbox" value="Advantage Lithium Argentina" checked="" onchange="msChange(&#39;tbl_controller&#39;)"> Advantage Lithium Argentina
+        </label><label class="ms-item">
+          <input type="checkbox" value="Albemarle Corporation" checked="" onchange="msChange(&#39;tbl_controller&#39;)"> Albemarle Corporation
+        </label><label class="ms-item">
+          <input type="checkbox" value="Aldebaran Resources" checked="" onchange="msChange(&#39;tbl_controller&#39;)"> Aldebaran Resources
+        </label><label class="ms-item">
+          <input type="checkbox" value="American Salars Lithium" checked="" onchange="msChange(&#39;tbl_controller&#39;)"> American Salars Lithium
+        </label><label class="ms-item">
+          <input type="checkbox" value="AngloGold Ashanti (92.5%) / Fomicruz S.E. (7.5%)" checked="" onchange="msChange(&#39;tbl_controller&#39;)"> AngloGold Ashanti (92.5%) / Fomicruz S.E. (7.5%)
+        </label><label class="ms-item">
+          <input type="checkbox" value="Antofalla Minerals" checked="" onchange="msChange(&#39;tbl_controller&#39;)"> Antofalla Minerals
+        </label><label class="ms-item">
+          <input type="checkbox" value="Argentina Lithium &amp; Energy Corp" checked="" onchange="msChange(&#39;tbl_controller&#39;)"> Argentina Lithium &amp; Energy Corp
+        </label><label class="ms-item">
+          <input type="checkbox" value="Argosy Minerals" checked="" onchange="msChange(&#39;tbl_controller&#39;)"> Argosy Minerals
+        </label><label class="ms-item">
+          <input type="checkbox" value="Austral Gold Limited" checked="" onchange="msChange(&#39;tbl_controller&#39;)"> Austral Gold Limited
+        </label><label class="ms-item">
+          <input type="checkbox" value="Austroid Corp." checked="" onchange="msChange(&#39;tbl_controller&#39;)"> Austroid Corp.
+        </label><label class="ms-item">
+          <input type="checkbox" value="Barrick Gold" checked="" onchange="msChange(&#39;tbl_controller&#39;)"> Barrick Gold
+        </label><label class="ms-item">
+          <input type="checkbox" value="Barrick Mining Corporation" checked="" onchange="msChange(&#39;tbl_controller&#39;)"> Barrick Mining Corporation
+        </label><label class="ms-item">
+          <input type="checkbox" value="Blue Sky Uranium" checked="" onchange="msChange(&#39;tbl_controller&#39;)"> Blue Sky Uranium
+        </label><label class="ms-item">
+          <input type="checkbox" value="CAMYEN SE" checked="" onchange="msChange(&#39;tbl_controller&#39;)"> CAMYEN SE
+        </label><label class="ms-item">
+          <input type="checkbox" value="CNEA" checked="" onchange="msChange(&#39;tbl_controller&#39;)"> CNEA
+        </label><label class="ms-item">
+          <input type="checkbox" value="Castañeda N. Rodrigo" checked="" onchange="msChange(&#39;tbl_controller&#39;)"> Castañeda N. Rodrigo
+        </label><label class="ms-item">
+          <input type="checkbox" value="Cerrado Gold" checked="" onchange="msChange(&#39;tbl_controller&#39;)"> Cerrado Gold
+        </label><label class="ms-item">
+          <input type="checkbox" value="Cerrado Gold Inc." checked="" onchange="msChange(&#39;tbl_controller&#39;)"> Cerrado Gold Inc.
+        </label><label class="ms-item">
+          <input type="checkbox" value="Challenger Gold Ltd." checked="" onchange="msChange(&#39;tbl_controller&#39;)"> Challenger Gold Ltd.
+        </label><label class="ms-item">
+          <input type="checkbox" value="Corriente Argentina" checked="" onchange="msChange(&#39;tbl_controller&#39;)"> Corriente Argentina
+        </label><label class="ms-item">
+          <input type="checkbox" value="Cosmos Minerals" checked="" onchange="msChange(&#39;tbl_controller&#39;)"> Cosmos Minerals
+        </label><label class="ms-item">
+          <input type="checkbox" value="Elevado Gold" checked="" onchange="msChange(&#39;tbl_controller&#39;)"> Elevado Gold
+        </label><label class="ms-item">
+          <input type="checkbox" value="Eramet" checked="" onchange="msChange(&#39;tbl_controller&#39;)"> Eramet
+        </label><label class="ms-item">
+          <input type="checkbox" value="Eris LLC" checked="" onchange="msChange(&#39;tbl_controller&#39;)"> Eris LLC
+        </label><label class="ms-item">
+          <input type="checkbox" value="Espíritu de los Andes" checked="" onchange="msChange(&#39;tbl_controller&#39;)"> Espíritu de los Andes
+        </label><label class="ms-item">
+          <input type="checkbox" value="Everlight Resources" checked="" onchange="msChange(&#39;tbl_controller&#39;)"> Everlight Resources
+        </label><label class="ms-item">
+          <input type="checkbox" value="First Quantum Minerals Ltd." checked="" onchange="msChange(&#39;tbl_controller&#39;)"> First Quantum Minerals Ltd.
+        </label><label class="ms-item">
+          <input type="checkbox" value="Fortescue" checked="" onchange="msChange(&#39;tbl_controller&#39;)"> Fortescue
+        </label><label class="ms-item">
+          <input type="checkbox" value="Fortuna Mining Corp." checked="" onchange="msChange(&#39;tbl_controller&#39;)"> Fortuna Mining Corp.
+        </label><label class="ms-item">
+          <input type="checkbox" value="Freedonia Mining" checked="" onchange="msChange(&#39;tbl_controller&#39;)"> Freedonia Mining
+        </label><label class="ms-item">
+          <input type="checkbox" value="Fuyang Mingjin New Energy" checked="" onchange="msChange(&#39;tbl_controller&#39;)"> Fuyang Mingjin New Energy
+        </label><label class="ms-item">
+          <input type="checkbox" value="Galan Lithium Limited" checked="" onchange="msChange(&#39;tbl_controller&#39;)"> Galan Lithium Limited
+        </label><label class="ms-item">
+          <input type="checkbox" value="Ganfeng Lithium" checked="" onchange="msChange(&#39;tbl_controller&#39;)"> Ganfeng Lithium
+        </label><label class="ms-item">
+          <input type="checkbox" value="Ganfeng Lithium (46.7%) / Lithium Argentina (44.8%) / JEMSE (8.5%)" checked="" onchange="msChange(&#39;tbl_controller&#39;)"> Ganfeng Lithium (46.7%) / Lithium Argentina (44.8%) / JEMSE (8.5%)
+        </label><label class="ms-item">
+          <input type="checkbox" value="Ganfeng Lithium (67%) / Lithium Argentina (33%)" checked="" onchange="msChange(&#39;tbl_controller&#39;)"> Ganfeng Lithium (67%) / Lithium Argentina (33%)
+        </label><label class="ms-item">
+          <input type="checkbox" value="Ganfeng Lithium Co., Ltd." checked="" onchange="msChange(&#39;tbl_controller&#39;)"> Ganfeng Lithium Co., Ltd.
+        </label><label class="ms-item">
+          <input type="checkbox" value="Gasmarra Minería" checked="" onchange="msChange(&#39;tbl_controller&#39;)"> Gasmarra Minería
+        </label><label class="ms-item">
+          <input type="checkbox" value="Glencore Plc." checked="" onchange="msChange(&#39;tbl_controller&#39;)"> Glencore Plc.
+        </label><label class="ms-item">
+          <input type="checkbox" value="Golden Arrow Resources" checked="" onchange="msChange(&#39;tbl_controller&#39;)"> Golden Arrow Resources
+        </label><label class="ms-item">
+          <input type="checkbox" value="Grupo Integra" checked="" onchange="msChange(&#39;tbl_controller&#39;)"> Grupo Integra
+        </label><label class="ms-item">
+          <input type="checkbox" value="Hanaq Group" checked="" onchange="msChange(&#39;tbl_controller&#39;)"> Hanaq Group
+        </label><label class="ms-item">
+          <input type="checkbox" value="Hochschild Mining" checked="" onchange="msChange(&#39;tbl_controller&#39;)"> Hochschild Mining
+        </label><label class="ms-item">
+          <input type="checkbox" value="Hochschild Mining (51%) / McEwen Mining (49%)" checked="" onchange="msChange(&#39;tbl_controller&#39;)"> Hochschild Mining (51%) / McEwen Mining (49%)
+        </label><label class="ms-item">
+          <input type="checkbox" value="International Iconic Gold" checked="" onchange="msChange(&#39;tbl_controller&#39;)"> International Iconic Gold
+        </label><label class="ms-item">
+          <input type="checkbox" value="Lake Resources (75%) / Lilac Solutions (25%)" checked="" onchange="msChange(&#39;tbl_controller&#39;)"> Lake Resources (75%) / Lilac Solutions (25%)
+        </label><label class="ms-item">
+          <input type="checkbox" value="Lithium Chile" checked="" onchange="msChange(&#39;tbl_controller&#39;)"> Lithium Chile
+        </label><label class="ms-item">
+          <input type="checkbox" value="Lithium Chile (80%) / SMG SRL (20%)" checked="" onchange="msChange(&#39;tbl_controller&#39;)"> Lithium Chile (80%) / SMG SRL (20%)
+        </label><label class="ms-item">
+          <input type="checkbox" value="Lithium Energi Argentina" checked="" onchange="msChange(&#39;tbl_controller&#39;)"> Lithium Energi Argentina
+        </label><label class="ms-item">
+          <input type="checkbox" value="Lithium Energy" checked="" onchange="msChange(&#39;tbl_controller&#39;)"> Lithium Energy
+        </label><label class="ms-item">
+          <input type="checkbox" value="Lithium Power International" checked="" onchange="msChange(&#39;tbl_controller&#39;)"> Lithium Power International
+        </label><label class="ms-item">
+          <input type="checkbox" value="Lithium S. Corporation" checked="" onchange="msChange(&#39;tbl_controller&#39;)"> Lithium S. Corporation
+        </label><label class="ms-item">
+          <input type="checkbox" value="Lundin Mining (50%) / BHP Group (50%)" checked="" onchange="msChange(&#39;tbl_controller&#39;)"> Lundin Mining (50%) / BHP Group (50%)
+        </label><label class="ms-item">
+          <input type="checkbox" value="MOM Mining SRL" checked="" onchange="msChange(&#39;tbl_controller&#39;)"> MOM Mining SRL
+        </label><label class="ms-item">
+          <input type="checkbox" value="Mansfield Minera" checked="" onchange="msChange(&#39;tbl_controller&#39;)"> Mansfield Minera
+        </label><label class="ms-item">
+          <input type="checkbox" value="McEwen Mining (47.7%) / Stellantis (19.4%)" checked="" onchange="msChange(&#39;tbl_controller&#39;)"> McEwen Mining (47.7%) / Stellantis (19.4%)
+        </label><label class="ms-item">
+          <input type="checkbox" value="Minera El Toro" checked="" onchange="msChange(&#39;tbl_controller&#39;)"> Minera El Toro
+        </label><label class="ms-item">
+          <input type="checkbox" value="Minsud Resources Corp" checked="" onchange="msChange(&#39;tbl_controller&#39;)"> Minsud Resources Corp
+        </label><label class="ms-item">
+          <input type="checkbox" value="Mirasol Resources" checked="" onchange="msChange(&#39;tbl_controller&#39;)"> Mirasol Resources
+        </label><label class="ms-item">
+          <input type="checkbox" value="Mogotes Metals" checked="" onchange="msChange(&#39;tbl_controller&#39;)"> Mogotes Metals
+        </label><label class="ms-item">
+          <input type="checkbox" value="Mármol Víctor Fernando" checked="" onchange="msChange(&#39;tbl_controller&#39;)"> Mármol Víctor Fernando
+        </label><label class="ms-item">
+          <input type="checkbox" value="NGEx Minerals" checked="" onchange="msChange(&#39;tbl_controller&#39;)"> NGEx Minerals
+        </label><label class="ms-item">
+          <input type="checkbox" value="Newmont" checked="" onchange="msChange(&#39;tbl_controller&#39;)"> Newmont
+        </label><label class="ms-item">
+          <input type="checkbox" value="Noa Lithium Brines" checked="" onchange="msChange(&#39;tbl_controller&#39;)"> Noa Lithium Brines
+        </label><label class="ms-item">
+          <input type="checkbox" value="Noa Lithium Brines / Pluspetrol" checked="" onchange="msChange(&#39;tbl_controller&#39;)"> Noa Lithium Brines / Pluspetrol
+        </label><label class="ms-item">
+          <input type="checkbox" value="POSCO Holdings Inc." checked="" onchange="msChange(&#39;tbl_controller&#39;)"> POSCO Holdings Inc.
+        </label><label class="ms-item">
+          <input type="checkbox" value="Pan American Silver" checked="" onchange="msChange(&#39;tbl_controller&#39;)"> Pan American Silver
+        </label><label class="ms-item">
+          <input type="checkbox" value="Pan American Silver Corp." checked="" onchange="msChange(&#39;tbl_controller&#39;)"> Pan American Silver Corp.
+        </label><label class="ms-item">
+          <input type="checkbox" value="Pan American Silver Corp. (60%) / CAM (40%)" checked="" onchange="msChange(&#39;tbl_controller&#39;)"> Pan American Silver Corp. (60%) / CAM (40%)
+        </label><label class="ms-item">
+          <input type="checkbox" value="Patagonia Gold" checked="" onchange="msChange(&#39;tbl_controller&#39;)"> Patagonia Gold
+        </label><label class="ms-item">
+          <input type="checkbox" value="Power Minerals" checked="" onchange="msChange(&#39;tbl_controller&#39;)"> Power Minerals
+        </label><label class="ms-item">
+          <input type="checkbox" value="Pursuit Minerals" checked="" onchange="msChange(&#39;tbl_controller&#39;)"> Pursuit Minerals
+        </label><label class="ms-item">
+          <input type="checkbox" value="Revotech Asia Ltd. (46%) / Xizang Zhufeng Resources (45%)" checked="" onchange="msChange(&#39;tbl_controller&#39;)"> Revotech Asia Ltd. (46%) / Xizang Zhufeng Resources (45%)
+        </label><label class="ms-item">
+          <input type="checkbox" value="Rodriguez Silvia Rene" checked="" onchange="msChange(&#39;tbl_controller&#39;)"> Rodriguez Silvia Rene
+        </label><label class="ms-item">
+          <input type="checkbox" value="Ruben Omar Diego" checked="" onchange="msChange(&#39;tbl_controller&#39;)"> Ruben Omar Diego
+        </label><label class="ms-item">
+          <input type="checkbox" value="Río Tinto Group" checked="" onchange="msChange(&#39;tbl_controller&#39;)"> Río Tinto Group
+        </label><label class="ms-item">
+          <input type="checkbox" value="Río Tinto Group (66.5%) / Toyota Tsusho (25%) / JEMSE (8.5%)" checked="" onchange="msChange(&#39;tbl_controller&#39;)"> Río Tinto Group (66.5%) / Toyota Tsusho (25%) / JEMSE (8.5%)
+        </label><label class="ms-item">
+          <input type="checkbox" value="SSR Mining Inc." checked="" onchange="msChange(&#39;tbl_controller&#39;)"> SSR Mining Inc.
+        </label><label class="ms-item">
+          <input type="checkbox" value="Silver Sands Resources" checked="" onchange="msChange(&#39;tbl_controller&#39;)"> Silver Sands Resources
+        </label><label class="ms-item">
+          <input type="checkbox" value="South32" checked="" onchange="msChange(&#39;tbl_controller&#39;)"> South32
+        </label><label class="ms-item">
+          <input type="checkbox" value="Southern Copper Argentina" checked="" onchange="msChange(&#39;tbl_controller&#39;)"> Southern Copper Argentina
+        </label><label class="ms-item">
+          <input type="checkbox" value="Studer Simon David" checked="" onchange="msChange(&#39;tbl_controller&#39;)"> Studer Simon David
+        </label><label class="ms-item">
+          <input type="checkbox" value="Tres Cerros Exploraciones" checked="" onchange="msChange(&#39;tbl_controller&#39;)"> Tres Cerros Exploraciones
+        </label><label class="ms-item">
+          <input type="checkbox" value="Ultra Lithium" checked="" onchange="msChange(&#39;tbl_controller&#39;)"> Ultra Lithium
+        </label><label class="ms-item">
+          <input type="checkbox" value="Unico Silver" checked="" onchange="msChange(&#39;tbl_controller&#39;)"> Unico Silver
+        </label><label class="ms-item">
+          <input type="checkbox" value="UrAmérica" checked="" onchange="msChange(&#39;tbl_controller&#39;)"> UrAmérica
+        </label><label class="ms-item">
+          <input type="checkbox" value="Xizang Zhufeng Resources" checked="" onchange="msChange(&#39;tbl_controller&#39;)"> Xizang Zhufeng Resources
+        </label><label class="ms-item">
+          <input type="checkbox" value="YMAD" checked="" onchange="msChange(&#39;tbl_controller&#39;)"> YMAD
+        </label><label class="ms-item">
+          <input type="checkbox" value="Zijin Mining Company" checked="" onchange="msChange(&#39;tbl_controller&#39;)"> Zijin Mining Company
+        </label><label class="ms-item">
+          <input type="checkbox" value="Zonda Metals / Grupo Alberdi" checked="" onchange="msChange(&#39;tbl_controller&#39;)"> Zonda Metals / Grupo Alberdi
+        </label>
+      </div>
+    </div></div>
+    <span class="filter-count" id="tbl-count">113 of 113 projects</span>
+  </div>
+  <div id="table-wrap">
+    <div id="projects-table" class="tabulator" role="grid" tabulator-layout="fitColumns" style="height: 100%;"><div class="tabulator-header" role="rowgroup"><div class="tabulator-header-contents" role="rowgroup"><div class="tabulator-headers" role="row" style="height: 26px; margin-right: 0px;"><div class="tabulator-col tabulator-sortable tabulator-col-sorter-element" role="columnheader" aria-sort="none" tabulator-field="name" style="min-width: 160px; width: 160px; height: 26px;"><div class="tabulator-col-content"><div class="tabulator-col-title-holder"><div class="tabulator-col-title">Project Name</div><div class="tabulator-col-sorter"><div class="tabulator-arrow"></div></div></div></div></div><span class="tabulator-col-resize-handle" style="height: 26px;"></span><div class="tabulator-col tabulator-sortable tabulator-col-sorter-element" role="columnheader" aria-sort="none" tabulator-field="region" style="min-width: 110px; width: 110px; height: 26px;"><div class="tabulator-col-content"><div class="tabulator-col-title-holder"><div class="tabulator-col-title">Region</div><div class="tabulator-col-sorter"><div class="tabulator-arrow"></div></div></div></div></div><span class="tabulator-col-resize-handle" style="height: 26px;"></span><div class="tabulator-col tabulator-sortable tabulator-col-sorter-element" role="columnheader" aria-sort="none" tabulator-field="stage" style="min-width: 140px; width: 140px; height: 26px;"><div class="tabulator-col-content"><div class="tabulator-col-title-holder"><div class="tabulator-col-title">Stage</div><div class="tabulator-col-sorter"><div class="tabulator-arrow"></div></div></div></div></div><span class="tabulator-col-resize-handle" style="height: 26px;"></span><div class="tabulator-col tabulator-sortable tabulator-col-sorter-element" role="columnheader" aria-sort="none" tabulator-field="controller" style="min-width: 200px; width: 200px; height: 26px;"><div class="tabulator-col-content"><div class="tabulator-col-title-holder"><div class="tabulator-col-title">Controller</div><div class="tabulator-col-sorter"><div class="tabulator-arrow"></div></div></div></div></div><span class="tabulator-col-resize-handle" style="height: 26px;"></span><div class="tabulator-col tabulator-sortable tabulator-col-sorter-element" role="columnheader" aria-sort="none" tabulator-field="mineral" style="min-width: 130px; width: 130px; height: 26px;"><div class="tabulator-col-content"><div class="tabulator-col-title-holder"><div class="tabulator-col-title">Mineral</div><div class="tabulator-col-sorter"><div class="tabulator-arrow"></div></div></div></div></div><span class="tabulator-col-resize-handle" style="height: 26px;"></span><div class="tabulator-col tabulator-sortable tabulator-col-sorter-element" role="columnheader" aria-sort="none" tabulator-field="production" style="min-width: 170px; width: 170px; height: 26px;"><div class="tabulator-col-content"><div class="tabulator-col-title-holder"><div class="tabulator-col-title">Production Output</div><div class="tabulator-col-sorter"><div class="tabulator-arrow"></div></div></div></div></div><span class="tabulator-col-resize-handle" style="height: 26px;"></span><div class="tabulator-col tabulator-sortable tabulator-col-sorter-element" role="columnheader" aria-sort="none" tabulator-field="reserves" style="min-width: 170px; width: 170px; height: 26px;"><div class="tabulator-col-content"><div class="tabulator-col-title-holder"><div class="tabulator-col-title">Estimated Reserves</div><div class="tabulator-col-sorter"><div class="tabulator-arrow"></div></div></div></div></div><span class="tabulator-col-resize-handle" style="height: 26px;"></span><div class="tabulator-col tabulator-sortable tabulator-col-sorter-element" role="columnheader" aria-sort="none" tabulator-field="capex" style="min-width: 160px; width: 160px; height: 26px;"><div class="tabulator-col-content"><div class="tabulator-col-title-holder"><div class="tabulator-col-title">CAPEX</div><div class="tabulator-col-sorter"><div class="tabulator-arrow"></div></div></div></div></div><span class="tabulator-col-resize-handle" style="height: 26px;"></span><div class="tabulator-col tabulator-sortable tabulator-col-sorter-element" role="columnheader" aria-sort="none" tabulator-field="finance_index" style="min-width: 120px; width: 120px; height: 26px;"><div class="tabulator-col-content"><div class="tabulator-col-title-holder"><div class="tabulator-col-title">Finance Index</div><div class="tabulator-col-sorter"><div class="tabulator-arrow"></div></div></div></div></div><span class="tabulator-col-resize-handle" style="height: 26px;"></span></div><br><div class="tabulator-frozen-rows-holder" style="min-width: 0px;"></div></div></div><div class="tabulator-tableholder" tabindex="0" style="height: calc(100% + 0px); max-height: calc(100% + 0px);"><div class="tabulator-table" role="rowgroup" style=""></div></div></div>
+  </div>
+</div>
+
+<div id="tab-highlights" class="tab-content">
+  <div class="highlights-wrap">
+    <div class="hl-panel hl-panel-left">
+      <div class="hl-panel-hdr">
+        <h2>Top Projects</h2>
+        <p id="hl-count"></p>
+      </div>
+      <div class="hl-cards" id="hl-cards"></div>
+    </div>
+    <div class="hl-panel">
+      <div class="hl-panel-hdr">
+        <h2>Latest Update</h2>
+        <p id="hl-rundate"></p>
+      </div>
+      <div class="hl-changes" id="hl-changes"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const PROVINCE_CENTROIDS = {
+  "Buenos Aires":[-36.6,-60.0],"Catamarca":[-27.5,-66.9],"Chaco":[-26.4,-60.8],
+  "Chubut":[-43.3,-65.1],"Córdoba":[-31.4,-64.2],"Corrientes":[-29.4,-58.8],
+  "Entre Ríos":[-31.7,-60.5],"Formosa":[-24.9,-59.4],"Jujuy":[-23.0,-65.7],
+  "La Pampa":[-37.1,-65.4],"La Rioja":[-29.4,-66.8],"Mendoza":[-34.6,-68.5],
+  "Misiones":[-27.4,-55.9],"Neuquén":[-38.0,-70.0],"Río Negro":[-40.7,-67.5],
+  "Salta":[-24.8,-65.4],"San Juan":[-31.5,-68.5],"San Luis":[-33.3,-66.3],
+  "Santa Cruz":[-51.6,-69.2],"Santa Fe":[-31.6,-60.7],
+  "Santiago del Estero":[-27.8,-64.3],"Tierra del Fuego":[-54.4,-67.0],
+  "Tucumán":[-26.8,-65.2]
+};
+const STAGE_COLORS = {
+  "Production":"#2dc653","Construction":"#e76f51","Feasibility":"#f4a261",
+  "Pre-Feasibility":"#e9c46a","Advanced Exploration":"#457b9d",
+  "PEA":"#6a9fc0","Maintenance":"#808080","Re-engineering":"#9b7bb8"
+};
+const RAW = [{"name":"Aguilar","region":"Jujuy","stage":"Production","controller":"Grupo Integra (100%)","mineral":"Lead","lat":-23.20575,"lon":-65.71747,"capex":"","finance_index":""},{"name":"Ajedrez","region":"Jujuy","stage":"Production","controller":"Espíritu de los Andes S.A. (100%)","mineral":"Gold","lat":-22.57,"lon":-66.35,"capex":"","finance_index":""},{"name":"Alba X","region":"Salta","stage":"Advanced Exploration","controller":"","mineral":"Lithium","lat":-24.75354964,"lon":-67.53737,"capex":"","finance_index":""},{"name":"Alcalina","region":"Salta","stage":"Advanced Exploration","controller":"","mineral":"Lithium","lat":-25.24652872,"lon":-67.45351901,"capex":"","finance_index":""},{"name":"Altar","region":"San Juan","stage":"PEA","controller":"Aldebaran Resources Inc. (80%) / Sibanye Stillwater (20%)","mineral":"Copper","lat":-31.4813,"lon":-70.48096,"capex":"","finance_index":""},{"name":"Amarillo Grande (Anit, Sta. Bárbara)","region":"Río Negro","stage":"Advanced Exploration","controller":"Blue Sky Uranium Corp. (100%)","mineral":"Uranium","lat":-39.61437,"lon":-67.22486,"capex":"","finance_index":""},{"name":"Arizaro","region":"Salta","stage":"Advanced Exploration","controller":"Xizang Zhufeng Resources Co. (100%)","mineral":"Lithium","lat":-24.846,"lon":-67.947,"capex":"1,055 MUSD","finance_index":""},{"name":"Arizaro Norte","region":"Salta","stage":"Advanced Exploration","controller":"Noa Lithium Brines Inc. (100%)","mineral":"Lithium","lat":-24.39499496,"lon":-67.35828148,"capex":"","finance_index":""},{"name":"Arizaro Sur","region":"Salta","stage":"Advanced Exploration","controller":"Pluspetrol Resources Corp. (100%)","mineral":"Lithium","lat":-24.88645,"lon":-67.77402,"capex":"","finance_index":""},{"name":"Bajo de la Alumbrera","region":"Catamarca","stage":"Maintenance","controller":"Glencore Plc. (100%)","mineral":"Copper","lat":-27.19,"lon":-66.36,"capex":"","finance_index":""},{"name":"Barro Negro","region":"Salta","stage":"Advanced Exploration","controller":"Cosmos Minerals S.A.","mineral":"Copper","lat":-24.473,"lon":-66.211,"capex":"","finance_index":""},{"name":"Bordo de la Cueva","region":"Salta","stage":"Advanced Exploration","controller":"Minera Anglo American Argentina S.A.","mineral":"Manganese","lat":-24.433,"lon":-66.133,"capex":"","finance_index":""},{"name":"Brealito","region":"Salta","stage":"Advanced Exploration","controller":"Cosmos Minerals S.A.","mineral":"Copper","lat":-25.3,"lon":-66.343,"capex":"","finance_index":""},{"name":"Calcatreu","region":"Río Negro","stage":"Construction","controller":"Patagonia Gold (100%)","mineral":"Gold","lat":-41.88306,"lon":-69.53333,"capex":"","finance_index":""},{"name":"Candelas","region":"Catamarca","stage":"PEA","controller":"Galan Lithium Limited (100%)","mineral":"Lithium","lat":-25.47594,"lon":-67.14368,"capex":"","finance_index":""},{"name":"Cangrejillos","region":"Salta","stage":"Advanced Exploration","controller":"Lithium S. Corporation (100%)","mineral":"Lithium","lat":-23.70593969,"lon":-66.14165029,"capex":"","finance_index":""},{"name":"Cañadon Del Moro","region":"Río Negro","stage":"Advanced Exploration","controller":"Southern Copper Corp. (100%)","mineral":"Silver","lat":-40.83333,"lon":-69.65,"capex":"","finance_index":""},{"name":"Cap-Oeste","region":"Santa Cruz","stage":"Production","controller":"Patagonia Gold (95%) / Fomicruz (5%)","mineral":"Gold","lat":-47.94467,"lon":-70.45145,"capex":"","finance_index":""},{"name":"Casposo","region":"San Juan","stage":"Production","controller":"Austral Gold Limited (100%)","mineral":"Gold","lat":-31.21083,"lon":-69.62918,"capex":"","finance_index":""},{"name":"Cauchari","region":"Jujuy","stage":"Pre-Feasibility","controller":"Austroid Corp. (100%)","mineral":"Lithium","lat":-23.72524,"lon":-66.81108,"capex":"","finance_index":""},{"name":"Cauchari Jv","region":"Jujuy","stage":"Pre-Feasibility","controller":"Rio Tinto Group (100%)","mineral":"Lithium","lat":-23.75738,"lon":-66.79067,"capex":"659 MUSD","finance_index":""},{"name":"Cauchari-Olaroz","region":"Jujuy","stage":"Production","controller":"Ganfeng Lithium Co. Ltd. (47%) / Lithium Argentina (45%) / Jujuy Energia y Mineria (8%)","mineral":"Lithium","lat":-23.41623,"lon":-66.71316,"capex":"","finance_index":""},{"name":"Centenario","region":"Salta","stage":"Advanced Exploration","controller":"Lithium Power International Ltd. (100%)","mineral":"Lithium","lat":-24.68115349,"lon":-66.61912636,"capex":"","finance_index":""},{"name":"Centenario-Ratones","region":"Salta","stage":"Production","controller":"Eramet (100%)","mineral":"Lithium","lat":-25.09077,"lon":-66.81628,"capex":"","finance_index":""},{"name":"Cerro Atajo","region":"Catamarca","stage":"Advanced Exploration","controller":"CAMYEN SE (100%)","mineral":"Copper","lat":-27.332918,"lon":-66.456819,"capex":"","finance_index":""},{"name":"Cerro Moro","region":"Santa Cruz","stage":"Production","controller":"Pan American Silver Corp (100%)","mineral":"Gold","lat":-48.11,"lon":-66.65,"capex":"","finance_index":""},{"name":"Cerro Negro","region":"Santa Cruz","stage":"Production","controller":"Newmont Goldcorp (100%)","mineral":"Gold","lat":-46.90743,"lon":-70.22152,"capex":"","finance_index":""},{"name":"Cerro Socompa","region":"Salta","stage":"Advanced Exploration","controller":"Rodriguez Silvia Rene","mineral":"Copper","lat":-24.395,"lon":-68.145,"capex":"","finance_index":""},{"name":"Cerro Solo","region":"Chubut","stage":"Advanced Exploration","controller":"CNEA (100%)","mineral":"Uranium","lat":-43.37,"lon":-68.688,"capex":"","finance_index":""},{"name":"Cerro Vanguardia","region":"Santa Cruz","stage":"Production","controller":"AngloGold Ashanti plc (92%) / Fomicruz (8%)","mineral":"Gold","lat":-48.39861,"lon":-68.29083,"capex":"","finance_index":""},{"name":"Chachas","region":"Salta","stage":"Advanced Exploration","controller":"Minera El Toro S.A.","mineral":"Copper","lat":-24.248,"lon":-67.329,"capex":"","finance_index":""},{"name":"Claudia","region":"Santa Cruz","stage":"Advanced Exploration","controller":"Mirasol Resources Ltda. (100%)","mineral":"Gold","lat":-48.56447,"lon":-68.10213,"capex":"","finance_index":""},{"name":"Conserrat","region":"Santa Cruz","stage":"Advanced Exploration","controller":"Unico Silver Ltda. (100%)","mineral":"Gold","lat":-48.2978,"lon":-68.53819,"capex":"","finance_index":""},{"name":"Córdoba","region":"Jujuy","stage":"Production","controller":"Sociedad Minera Santa Maria S.A. (100%)","mineral":"Gold","lat":-22.43,"lon":-66.34,"capex":"","finance_index":""},{"name":"Diablillos","region":"Catamarca - Salta","stage":"Feasibility","controller":"AbraSilver Resources Corp (100%)","mineral":"Silver","lat":-25.27349,"lon":-66.81259,"capex":"620 MUSD","finance_index":""},{"name":"Diana (La Torca)","region":"Salta","stage":"Advanced Exploration","controller":"Cardero Argentina S.A.","mineral":"Lead","lat":-24.431,"lon":-66.309,"capex":"","finance_index":""},{"name":"Don Julio","region":"San Juan","stage":"Advanced Exploration","controller":"South32 ltd. (65%) / Sable Resources Ltd. (35%)","mineral":"Gold","lat":-30.51674,"lon":-69.7068,"capex":"","finance_index":""},{"name":"Don Nicolás","region":"Santa Cruz","stage":"Production","controller":"Cerrado Gold Inc. (100%)","mineral":"Gold","lat":-47.93368,"lon":-67.45171,"capex":"","finance_index":""},{"name":"Don Otto","region":"Salta","stage":"Feasibility","controller":"CNEA (100%)","mineral":"Uranium","lat":-25.611,"lon":-65.927,"capex":"","finance_index":""},{"name":"Don Sixto","region":"Mendoza","stage":"Advanced Exploration","controller":"Pan American Silver Corp (100%)","mineral":"Gold","lat":-36.29308,"lon":-68.45586,"capex":"","finance_index":""},{"name":"Doncella","region":"Salta","stage":"Advanced Exploration","controller":"Hanaq Group (100%)","mineral":"Lithium","lat":-24.787,"lon":-68.004,"capex":"","finance_index":""},{"name":"El Dorado Monserrat","region":"Santa Cruz","stage":"Advanced Exploration","controller":"Fredonia Mining Inc. (100%)","mineral":"Gold","lat":-48.40667,"lon":-68.60556,"capex":"","finance_index":""},{"name":"El Pachón","region":"San Juan","stage":"Feasibility","controller":"Glencore Plc. (100%)","mineral":"Copper","lat":-31.744,"lon":-70.431,"capex":"9,460 MUSD","finance_index":""},{"name":"El Quevar","region":"Salta","stage":"PEA","controller":"Argenta Silver Corp. (100%)","mineral":"Silver","lat":-24.321178,"lon":-66.814928,"capex":"","finance_index":""},{"name":"Farallón Negro","region":"Catamarca","stage":"Production","controller":"YMAD (100%)","mineral":"Gold","lat":-27.3079,"lon":-66.67527,"capex":"","finance_index":""},{"name":"Fenix","region":"Catamarca","stage":"Production","controller":"Rio Tinto Group (100%)","mineral":"Lithium","lat":-25.3927,"lon":-67.04878,"capex":"","finance_index":""},{"name":"Filo Del Sol","region":"San Juan","stage":"Pre-Feasibility","controller":"Lundin Mining Corporation (50%) / BHP Group Corp. (50%)","mineral":"Copper","lat":-28.49471,"lon":-69.662,"capex":"18,200 MUSD","finance_index":""},{"name":"Flammarion","region":"Salta","stage":"Advanced Exploration","controller":"Hanaq Group (100%)","mineral":"Lead","lat":-24.17,"lon":-66.412,"capex":"","finance_index":""},{"name":"Gallego","region":"Salta","stage":"Advanced Exploration","controller":"Everlight Resources (100%)","mineral":"Lithium","lat":-25.03,"lon":-67.01,"capex":"","finance_index":""},{"name":"Gualcamayo / Carbonatos Profundos","region":"San Juan","stage":"Production","controller":"Eris LLC (100%)","mineral":"Gold","lat":-29.72,"lon":-68.629,"capex":"","finance_index":""},{"name":"Hierro Indio","region":"Mendoza","stage":"Advanced Exploration","controller":"Orvana Minerals Corp","mineral":"Iron","lat":-35.0,"lon":-69.783333,"capex":"","finance_index":""},{"name":"Hombre Muerto Norte","region":"Salta","stage":"PEA","controller":"POSCO Holdings Inc. (100%)","mineral":"Lithium","lat":-25.22556,"lon":-66.98187,"capex":"","finance_index":""},{"name":"Hombre Muerto Oeste","region":"Catamarca","stage":"Construction","controller":"Galan Lithium Limited (100%)","mineral":"Lithium","lat":-25.4099951,"lon":-67.2450136,"capex":"","finance_index":""},{"name":"Hualilán","region":"San Juan","stage":"Pre-Feasibility","controller":"Challenger Gold Ltda. (100%)","mineral":"Gold","lat":-30.73193,"lon":-68.95328,"capex":"2.1 MUSD","finance_index":""},{"name":"Incahuasi","region":"Salta","stage":"Advanced Exploration","controller":"","mineral":"Lithium","lat":-24.15033754,"lon":-67.53405109,"capex":"","finance_index":""},{"name":"Incahuasi Moncho","region":"Salta","stage":"Advanced Exploration","controller":"Ganfeng Lithium Co. Ltd. (100%)","mineral":"Lithium","lat":-24.24349093,"lon":-67.56645623,"capex":"","finance_index":""},{"name":"Ivana (Amarillo Grande)","region":"Río Negro","stage":"PEA","controller":"Blue Sky Uranium Corp. (100%)","mineral":"Uranium","lat":-39.61437,"lon":-67.22486,"capex":"","finance_index":""},{"name":"Josemaria","region":"San Juan","stage":"Construction","controller":"Lundin Mining Corporation (50%) / BHP Group (50%)","mineral":"Copper","lat":-28.43583,"lon":-69.54861,"capex":"18,200 MUSD","finance_index":""},{"name":"Kachi","region":"Catamarca","stage":"Feasibility","controller":"Lake Resources NL (75%) / Lilac Solutions Inc. (25%)","mineral":"Lithium","lat":-26.49883,"lon":-67.42899,"capex":"1,157 MUSD","finance_index":""},{"name":"La Esperanza","region":"Salta","stage":"Advanced Exploration","controller":"","mineral":"Lead","lat":-24.242,"lon":-66.487,"capex":"","finance_index":""},{"name":"La Josefina","region":"Santa Cruz","stage":"Advanced Exploration","controller":"Patagonia Gold (95%) / Fomicruz (5%)","mineral":"Gold","lat":-47.86613,"lon":-69.37623,"capex":"","finance_index":""},{"name":"La Manchuria","region":"Santa Cruz","stage":"Advanced Exploration","controller":"Astra Exploration (90%) / Fomicruz (10%)","mineral":"Gold","lat":-48.15831,"lon":-69.89174,"capex":"","finance_index":""},{"name":"La Ortiga","region":"San Juan","stage":"Advanced Exploration","controller":"Barrick Mining Corporation (100%)","mineral":"Copper","lat":-28.79747,"lon":-69.4495,"capex":"","finance_index":""},{"name":"La Poma (La negra)","region":"Salta","stage":"Advanced Exploration","controller":"","mineral":"Lead","lat":-24.241,"lon":-66.485,"capex":"","finance_index":""},{"name":"La Poma I","region":"Salta","stage":"Advanced Exploration","controller":"","mineral":"Lead","lat":-24.438,"lon":-66.303,"capex":"","finance_index":""},{"name":"La Providencia","region":"Jujuy","stage":"Production","controller":"Hanaq Group (100%)","mineral":"Silver","lat":-23.26139,"lon":-66.80083,"capex":"","finance_index":""},{"name":"Laguna Colorada","region":"Chubut","stage":"Advanced Exploration","controller":"CNEA (100%)","mineral":"Uranium","lat":-43.91,"lon":-68.67,"capex":"","finance_index":""},{"name":"Laguna Salada","region":"Chubut","stage":"PEA","controller":"Jaguar Uranium Corp. (100%)","mineral":"Uranium","lat":-44.29626,"lon":-67.21681,"capex":"","finance_index":""},{"name":"Laguna Verde (La Borita)","region":"Catamarca","stage":"Advanced Exploration","controller":"Ultra Lithium Inc. (100%)","mineral":"Lithium","lat":-25.35885,"lon":-67.4804,"capex":"","finance_index":""},{"name":"Lama","region":"San Juan","stage":"Advanced Exploration","controller":"Barrick Mining Corporation (100%)","mineral":"Gold","lat":-29.32967,"lon":-69.98827,"capex":"","finance_index":""},{"name":"Las Calandrias","region":"Santa Cruz","stage":"Production","controller":"Cerrado Gold Inc. (100%)","mineral":"Gold","lat":-47.60674,"lon":-67.51792,"capex":"","finance_index":""},{"name":"Lindero","region":"Salta","stage":"Production","controller":"Fortuna Mining Corp. (100%)","mineral":"Gold","lat":-25.09772,"lon":-67.75905,"capex":"","finance_index":""},{"name":"Los Azules","region":"San Juan","stage":"Feasibility","controller":"McEwen Inc. (46%) / Stellantis (18%) / Otros (36%)","mineral":"Copper","lat":-31.08139,"lon":-70.16865,"capex":"3,168 MUSD","finance_index":""},{"name":"Mara","region":"Catamarca","stage":"Feasibility","controller":"Glencore Plc. (100%)","mineral":"Copper","lat":-27.376,"lon":-66.283,"capex":"4,000 MUSD","finance_index":""},{"name":"Marcelo","region":"Salta","stage":"Advanced Exploration","controller":"","mineral":"Copper","lat":-24.306,"lon":-67.32,"capex":"","finance_index":""},{"name":"Mariana","region":"Salta","stage":"Production","controller":"Ganfeng Lithium Co. Ltd. (100%)","mineral":"Lithium","lat":-24.81373,"lon":-68.30736,"capex":"","finance_index":""},{"name":"Martín Bronce","region":"Jujuy","stage":"Production","controller":"MOM Mining SRL (100%)","mineral":"Copper","lat":-24.40305,"lon":-64.49939,"capex":"","finance_index":""},{"name":"Meseta Central","region":"Chubut","stage":"Advanced Exploration","controller":"UrAmérica Ltd. (100%)","mineral":"Uranium","lat":-43.41,"lon":-68.69,"capex":"","finance_index":""},{"name":"Michelle","region":"Santa Cruz","stage":"Advanced Exploration","controller":"AngloGold Ashanti plc (100%)","mineral":"Gold","lat":-48.34265,"lon":-68.50223,"capex":"","finance_index":""},{"name":"Mina Catalina Ii","region":"Jujuy","stage":"Production","controller":"Espíritu de los Andes S.A. (100%)","mineral":"Gold","lat":-22.58405189,"lon":-66.34787963,"capex":"","finance_index":""},{"name":"Mina Martha","region":"Santa Cruz","stage":"Re-engineering","controller":"Patagonia Gold (95%) / Fomicruz (5%)","mineral":"Silver","lat":-48.69393,"lon":-69.69886,"capex":"","finance_index":""},{"name":"Mina Sisifo - Mina Patilla","region":"Salta","stage":"Advanced Exploration","controller":"Power Minerals Ltda. (100%)","mineral":"Lithium","lat":-24.23533,"lon":-67.51665,"capex":"","finance_index":""},{"name":"Mogotes (Filo Sur)","region":"San Juan","stage":"Advanced Exploration","controller":"Mogotes Metals Inc. (100%)","mineral":"Copper","lat":-28.605,"lon":-69.626667,"capex":"","finance_index":""},{"name":"Mosquito","region":"Santa Cruz","stage":"Advanced Exploration","controller":"Hochschild Mining plc (100%)","mineral":"Gold","lat":-48.04962,"lon":-66.74309,"capex":"","finance_index":""},{"name":"Navidad","region":"Chubut","stage":"PEA","controller":"Pan American Silver Corp (100%)","mineral":"Silver","lat":-42.415,"lon":-68.82,"capex":"","finance_index":""},{"name":"Olaroz","region":"Jujuy","stage":"Production","controller":"Rio Tinto Group (67%) / Toyota Tsusho (25%) / Jujuy Energía y Minería (9%)","mineral":"Lithium","lat":-23.45,"lon":-66.7,"capex":"","finance_index":""},{"name":"Organullo","region":"Salta","stage":"Advanced Exploration","controller":"Latin Metals Inc. (100%)","mineral":"Lead","lat":-24.395,"lon":-66.318,"capex":"","finance_index":""},{"name":"Distrito Pingüino (Sa. Blanca, Plara León, Cerro Leòn, Pinguino)","region":"Santa Cruz","stage":"Advanced Exploration","controller":"Unico Silver Ltda. (100%)","mineral":"Silver","lat":-48.01789,"lon":-68.67303,"capex":"","finance_index":""},{"name":"Pocitos I","region":"Salta","stage":"Advanced Exploration","controller":"American Salars Lithium Inc. (100%)","mineral":"Lithium","lat":-24.495,"lon":-67.0327777777777,"capex":"","finance_index":""},{"name":"Potrerillos","region":"San Juan","stage":"Advanced Exploration","controller":"Golden Arrow Resources Corp. (100%)","mineral":"Gold","lat":-29.36999,"lon":-69.85988,"capex":"","finance_index":""},{"name":"Pozuelos Pastos-Grandes","region":"Salta","stage":"Feasibility","controller":"Ganfeng Lithium Co. Ltd. (67%) / Lithium Argentina (33%)","mineral":"Lithium","lat":-24.69897,"lon":-66.81781,"capex":"3,300 MUSD","finance_index":""},{"name":"Prospecto Arizaro","region":"Salta","stage":"Advanced Exploration","controller":"","mineral":"Copper","lat":-25.104,"lon":-67.756,"capex":"","finance_index":""},{"name":"Pular (Salta Lithium)","region":"Salta","stage":"Advanced Exploration","controller":"","mineral":"Lithium","lat":-24.401,"lon":-67.083,"capex":"","finance_index":""},{"name":"Puna Operation (Chinchillas - Pirquitas)","region":"Jujuy","stage":"Production","controller":"SSR Mining Inc. (100%)","mineral":"Silver","lat":-22.50508,"lon":-66.25685,"capex":"","finance_index":""},{"name":"Reina Sofia Iv","region":"Salta","stage":"Advanced Exploration","controller":"","mineral":"Lithium","lat":-24.39558583,"lon":-67.02177048,"capex":"","finance_index":""},{"name":"Rincón","region":"Salta","stage":"Construction","controller":"Argosy Minerals (100%)","mineral":"Lithium","lat":-24.20374,"lon":-66.99009,"capex":"","finance_index":""},{"name":"Rincón Oeste","region":"Salta","stage":"Advanced Exploration","controller":"Argentina Lithium & Energy Corp. (100%)","mineral":"Lithium","lat":-24.0480583,"lon":-67.220975,"capex":"","finance_index":""},{"name":"Rincón (Salta Lithium)","region":"Salta","stage":"PEA","controller":"Power Minerals Ltda. (100%)","mineral":"Lithium","lat":-24.1127,"lon":-67.17265,"capex":"","finance_index":""},{"name":"Rio Cenicero","region":"San Juan","stage":"Advanced Exploration","controller":"Aldebaran Resources Inc. (100%)","mineral":"Copper","lat":-31.55608,"lon":-70.47163,"capex":"","finance_index":""},{"name":"Rio Grande","region":"Salta","stage":"Advanced Exploration","controller":"Pluspetrol Resources Corp. (100%)","mineral":"Lithium","lat":-25.00605,"lon":-68.14443,"capex":"","finance_index":""},{"name":"Rio Grande Sur","region":"Salta","stage":"Pre-Feasibility","controller":"Pursuit Minerals Ltd. (100%)","mineral":"Lithium","lat":-25.0688611,"lon":-68.2074111111111,"capex":"","finance_index":""},{"name":"Rio Salinas","region":"San Juan","stage":"Advanced Exploration","controller":"Fortescue  Ltd. (100%)","mineral":"Copper","lat":-31.35185325,"lon":-70.3773304,"capex":"","finance_index":""},{"name":"Sal de Los Ángeles","region":"Salta","stage":"Construction","controller":"Revotech Asia Ltda. (46%) / Xizang Zhufeng Resources Co. (45%) / Leading Resources Global Ltd. (9%)","mineral":"Lithium","lat":-25.24472,"lon":-66.74833,"capex":"500 MUSD","finance_index":""},{"name":"Sal de Oro","region":"Catamarca - Salta","stage":"Production","controller":"POSCO Holdings Inc. (100%)","mineral":"Lithium","lat":-25.22426,"lon":-66.96852,"capex":"","finance_index":""},{"name":"Sal de Vida","region":"Catamarca","stage":"Construction","controller":"Rio Tinto Group (100%)","mineral":"Lithium","lat":-25.34532,"lon":-66.94715,"capex":"660 MUSD","finance_index":""},{"name":"Salar de Antofalla I Al Xiii Y Bolland Vi","region":"Catamarca","stage":"Advanced Exploration","controller":"Albemarle Corporation (100%)","mineral":"Lithium","lat":-25.866666,"lon":-67.85,"capex":"","finance_index":""},{"name":"Salar del Rincón","region":"Salta","stage":"Construction","controller":"Rio Tinto Group (100%)","mineral":"Lithium","lat":-24.0575,"lon":-67.12,"capex":"2,500 MUSD","finance_index":""},{"name":"Salar Tolillar","region":"Salta","stage":"PEA","controller":"Alpha Lithium Corporation (100%)","mineral":"Lithium","lat":-25.03672,"lon":-67.12411,"capex":"","finance_index":""},{"name":"Salari","region":"Salta","stage":"Advanced Exploration","controller":"Eramet (100%)","mineral":"Lithium","lat":-24.72490657,"lon":-67.79769983,"capex":"","finance_index":""},{"name":"Salari 22","region":"Salta","stage":"Advanced Exploration","controller":"","mineral":"Lithium","lat":-24.90458899,"lon":-67.69699741,"capex":"","finance_index":""},{"name":"San Jorge (PSJ Cobre Mendocino)","region":"Mendoza","stage":"Pre-Feasibility","controller":"Zonda Metals GmBH (90%) / Grupo Alberdi (10%)","mineral":"Copper","lat":-32.2448,"lon":-69.43887,"capex":"560 MUSD","finance_index":""},{"name":"San José","region":"Santa Cruz","stage":"Production","controller":"Hochschild Mining Plc (51%) / McEwen Mining Inc. (49%)","mineral":"Silver","lat":-46.66848,"lon":-70.29747,"capex":"","finance_index":""},{"name":"San Roque","region":"Río Negro","stage":"Advanced Exploration","controller":"International Iconic Gold exploration corp (100%)","mineral":"Gold","lat":-40.78585,"lon":-65.79743,"capex":"","finance_index":""},{"name":"Santa Ines","region":"Salta","stage":"Advanced Exploration","controller":"Fuyang Mingjin New Energy Development Co (100%)","mineral":"Copper","lat":-24.784,"lon":-68.144,"capex":"","finance_index":""},{"name":"Sapo y otras","region":"Neuquén","stage":"Advanced Exploration","controller":"","mineral":"Copper","lat":-37.803474,"lon":-69.415636,"capex":"","finance_index":""},{"name":"Sierra Grande","region":"Río Negro","stage":"Re-engineering","controller":"China Metallurgical Group Corporation (70%) / A GRADE TRADING LTD (30%)","mineral":"Iron","lat":-41.677,"lon":-65.369,"capex":"","finance_index":""},{"name":"Sierra Pintada","region":"Mendoza","stage":"Feasibility","controller":"CNEA (100%)","mineral":"Uranium","lat":-34.9563,"lon":-68.6119,"capex":"","finance_index":""},{"name":"Sincera","region":"Catamarca","stage":"Advanced Exploration","controller":"Antofalla Minerals S.A (Marcelo López Acuña)","mineral":"Lithium","lat":-26.05715833,"lon":-67.9349166,"capex":"","finance_index":""},{"name":"Solaroz","region":"Jujuy","stage":"Advanced Exploration","controller":"CNGR Advanced Material (90%) / Hanaq (10%)","mineral":"Lithium","lat":-23.54439,"lon":-66.62877,"capex":"","finance_index":""},{"name":"Suyai","region":"Chubut","stage":"Feasibility","controller":"Pan American Silver Corp (60%) / CAM (40%)","mineral":"Gold","lat":-42.89718,"lon":-71.21956,"capex":"220 MUSD","finance_index":""},{"name":"Taca Sal IV","region":"Salta","stage":"Advanced Exploration","controller":"","mineral":"Lithium","lat":-24.652159,"lon":-67.78915982,"capex":"","finance_index":""},{"name":"Taca Taca","region":"Salta","stage":"Feasibility","controller":"First Quantum Minerals Ltd. (100%)","mineral":"Copper","lat":-24.57255,"lon":-67.73582,"capex":"5,251 MUSD","finance_index":""},{"name":"Taguas","region":"San Juan","stage":"PEA","controller":"Orvana Minerals Corp (100%)","mineral":"Gold","lat":-29.20134,"lon":-69.87465,"capex":"","finance_index":""},{"name":"Taron Cesium","region":"Salta","stage":"PEA","controller":"Cascadero Copper Corp. (100%)","mineral":"Cesium","lat":-24.65,"lon":-66.5,"capex":"","finance_index":""},{"name":"Tebenquicho Chico","region":"Catamarca","stage":"Advanced Exploration","controller":"Elevado Gold (100%)","mineral":"Gold","lat":-25.3352805,"lon":-67.53559,"capex":"","finance_index":""},{"name":"Tres Quebradas","region":"Catamarca","stage":"Production","controller":"Zijin Mining Group Ltd. (100%)","mineral":"Lithium","lat":-27.36413,"lon":-68.66513,"capex":"","finance_index":""},{"name":"Trila Lea","region":"Catamarca","stage":"Advanced Exploration","controller":"Triangle Lithium Argentina S.A (80%) / Lithium Energi Exploration Inc (20%)","mineral":"Lithium","lat":-26.05864,"lon":-67.93053,"capex":"","finance_index":""},{"name":"Valle Ancho","region":"Catamarca","stage":"Advanced Exploration","controller":"NGEx Minerals Ltd. (100%)","mineral":"Gold","lat":-27.583333,"lon":-68.833333,"capex":"","finance_index":""},{"name":"Valle de Chita","region":"San Juan","stage":"Advanced Exploration","controller":"South32 Ltd. (50%) / Minsud Resources Corp. (50%)","mineral":"Copper","lat":-30.55137,"lon":-69.52132,"capex":"","finance_index":""},{"name":"Vega de Arizaro","region":"Salta","stage":"Advanced Exploration","controller":"","mineral":"Lithium","lat":-24.51189488,"lon":-67.90665183,"capex":"","finance_index":""},{"name":"Veladero","region":"San Juan","stage":"Production","controller":"Barrick Mining Corporation (50%) / Shandong Gold Mining Co. Ltd. (50%)","mineral":"Gold","lat":-29.40026,"lon":-69.91594,"capex":"","finance_index":""},{"name":"Vil Achay","region":"Catamarca","stage":"Advanced Exploration","controller":"Alto Grande S.A. (100%)","mineral":"Tin","lat":-27.53,"lon":-67.265,"capex":"","finance_index":""},{"name":"Virginia","region":"Santa Cruz","stage":"Advanced Exploration","controller":"Mirasol Resources Ltda. (100%)","mineral":"Silver","lat":-47.46658,"lon":-69.94496,"capex":"","finance_index":""},{"name":"Yanso","region":"San Juan","stage":"Advanced Exploration","controller":"Golden Arrow Resources Corp. (100%)","mineral":"Gold","lat":-29.9325528,"lon":-68.5414583333333,"capex":"","finance_index":""}];
+const CHANGELOG = {"run_date":"2026-05-14","new_projects":[],"stage_changes":[],"capex_updates":[]};
+// ---- FINANCE INDEX ----
+const STAGE_SCORES = {
+  "Pre-Feasibility":100,"Feasibility":60,"PEA":70,
+  "Advanced Exploration":50,"Construction":20,"Production":10,
+  "Re-engineering":15,"Maintenance":5
+};
+const CONTROLLER_RANKINGS = {
+  // Strong = 100
+  "AngloGold Ashanti":100,"Barrick Mining":100,"BHP Group":100,
+  "Eramet":100,"First Quantum":100,"Fortescue":100,
+  "Glencore":100,"Lundin Mining":100,"Newmont":100,
+  "Rio Tinto":100,"Río Tinto":100,"South32":100,
+  "Southern Copper Argentina":100,"Toyota Tsusho":100,
+  // Neutral = 60
+  "CAMYEN":60,"CNEA":60,"Hochschild Mining":60,
+  // Weak = 25
+  "AbraSilver":25,"Albemarle":25,"Aldebaran":25,
+  "American Salars":25,"Argentina Lithium":25,"Argosy Minerals":25,
+  "Austral Gold":25,"Blue Sky Uranium":25,"Cerrado Gold":25,
+  "Challenger Gold":25,"Fortuna Mining":25,"Freedonia Mining":25,
+  "Galan Lithium":25,"Ganfeng Lithium":25,"Golden Arrow":25,
+  "Grupo Alberdi":25,"Hanaq Group":25,"Lake Resources":25,
+  "Lithium Argentina":25,"Lithium Chile":25,"Lithium Energi":25,
+  "Lithium Energy":25,"Lithium Power International":25,"McEwen Mining":25,
+  "Minsud Resources":25,"Mirasol Resources":25,"Mogotes Metals":25,
+  "NGEx Minerals":25,"NOA Lithium":25,"Noa Lithium":25,
+  "Pan American Silver":25,"Patagonia Gold":25,"POSCO Holdings":25,
+  "Power Minerals":25,"Pursuit Minerals":25,"Silver Sands":25,
+  "SSR Mining":25,"Ultra Lithium":25,"Unico Silver":25,
+  "UrAmerica":25,"UrAmérica":25,"Zijin Mining":25
+};
+const FI_WEIGHTS = {stage:1/3, capex:1/3, controller:1/3};
+
+function parseCapex(s){
+  if(!s) return 0;
+  const m=s.match(/([\d,]+(?:\.\d+)?)\s*MUSD/i);
+  return m ? parseFloat(m[1].replace(/,/g,'')) : 0;
+}
+function getControllerScore(s){
+  if(!s) return 0;
+  var best=0;
+  var parts=s.split(' / ');
+  var keys=Object.keys(CONTROLLER_RANKINGS);
+  for(var i=0;i<parts.length;i++){
+    var c=parts[i].replace(/\s*\(\d+(?:\.\d+)?%\)\s*/g,'').trim().toLowerCase();
+    for(var j=0;j<keys.length;j++){
+      if(c.indexOf(keys[j].toLowerCase())!==-1) best=Math.max(best,CONTROLLER_RANKINGS[keys[j]]);
+    }
+  }
+  return best;
+}
+const MAX_CAPEX_MUSD=(()=>{
+  const vals=RAW.map(p=>parseCapex(p.capex)).filter(v=>v>0);
+  return vals.length?Math.max(...vals):1;
+})();
+function computeFinanceIndex(p){
+  const s=STAGE_SCORES[p.stage]||0;
+  const c=(parseCapex(p.capex)/MAX_CAPEX_MUSD)*100;
+  const r=getControllerScore(p.controller);
+  return Math.round(s*FI_WEIGHTS.stage + c*FI_WEIGHTS.capex + r*FI_WEIGHTS.controller);
+}
+
+const projects = RAW.map(p => {
+  if (p.lat===null||p.lon===null) {
+    const c=PROVINCE_CENTROIDS[p.region];
+    if(c){p.lat=c[0];p.lon=c[1];}
+  }
+  return p;
+});
+
+function showTab(name) {
+  document.querySelectorAll('.tab-content').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(el=>el.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  document.getElementById('btn-'+name).classList.add('active');
+  if(name==='map') setTimeout(()=>leafletMap.invalidateSize(),50);
+}
+
+// ---- SHARED MULTI-SELECT FILTER SYSTEM ----
+// prefix 'map_' → drives the map; prefix 'tbl_' → drives the table
+const msState={};
+const msCallbacks={};
+
+function buildMS(wrapperId,field,label,prefix,updateFn){
+  const stateKey=prefix+field;
+  const values=[...new Set(projects.map(p=>p[field]).filter(Boolean))].sort();
+  msState[stateKey]=new Set(values);
+  msState[stateKey].add('');
+  msCallbacks[stateKey]=updateFn;
+  const wrap=document.getElementById(wrapperId);
+  wrap.innerHTML=`
+    <button class="ms-btn" id="ms-btn-${stateKey}" onclick="toggleMS('${stateKey}')">
+      ${label}<span class="ms-badge all" id="ms-badge-${stateKey}">All</span>
+      <span class="ms-arrow">&#9662;</span>
+    </button>
+    <div class="ms-panel" id="ms-panel-${stateKey}">
+      <div class="ms-search">
+        <input type="text" placeholder="Search..." oninput="msSearch('${stateKey}',this.value)">
+      </div>
+      <div class="ms-controls">
+        <button onclick="msSelectAll('${stateKey}',true)">All</button>
+        <button onclick="msSelectAll('${stateKey}',false)">None</button>
+      </div>
+      <div class="ms-items" id="ms-items-${stateKey}">
+        ${values.map(v=>`<label class="ms-item">
+          <input type="checkbox" value="${v}" checked onchange="msChange('${stateKey}')"> ${v}
+        </label>`).join('')}
+      </div>
+    </div>`;
+}
+function toggleMS(stateKey){
+  const panel=document.getElementById('ms-panel-'+stateKey);
+  const isOpen=panel.classList.contains('open');
+  document.querySelectorAll('.ms-panel').forEach(p=>p.classList.remove('open'));
+  if(!isOpen){
+    panel.classList.add('open');
+    const inp=panel.querySelector('.ms-search input');
+    if(inp){inp.value='';msSearch(stateKey,'');inp.focus();}
+  }
+}
+function msSearch(stateKey,query){
+  const q=query.toLowerCase();
+  document.querySelectorAll(`#ms-items-${stateKey} .ms-item`).forEach(item=>{
+    item.style.display=item.textContent.toLowerCase().includes(q)?'':'none';
+  });
+}
+function msChange(stateKey){
+  const checked=[...document.querySelectorAll(`#ms-items-${stateKey} input:checked`)].map(i=>i.value);
+  msState[stateKey]=new Set(checked);
+  const total=document.querySelectorAll(`#ms-items-${stateKey} input`).length;
+  const badge=document.getElementById('ms-badge-'+stateKey);
+  const btn=document.getElementById('ms-btn-'+stateKey);
+  if(checked.length===total){badge.textContent='All';badge.className='ms-badge all';btn.classList.remove('has-filter');}
+  else{badge.textContent=checked.length;badge.className='ms-badge';btn.classList.add('has-filter');}
+  msCallbacks[stateKey]();
+}
+function msSelectAll(stateKey,val){
+  document.querySelectorAll(`#ms-items-${stateKey} input`).forEach(i=>i.checked=val);
+  msChange(stateKey);
+}
+document.addEventListener('click',e=>{
+  if(!e.target.closest('.ms-wrap')) document.querySelectorAll('.ms-panel').forEach(p=>p.classList.remove('open'));
+});
+
+// ---- MAP ----
+buildMS('ms-name-map',   'name',       'Project ',    'map_', updateMap);
+buildMS('ms-stage',      'stage',      'Stage ',      'map_', updateMap);
+buildMS('ms-region',     'region',     'Region ',     'map_', updateMap);
+buildMS('ms-mineral',    'mineral',    'Mineral ',    'map_', updateMap);
+buildMS('ms-controller', 'controller', 'Controller ', 'map_', updateMap);
+
+const leafletMap=L.map('map',{
+  center:[-34,-64],zoom:4,minZoom:4,
+  maxBounds:[[-56,-74],[-21,-53]],maxBoundsViscosity:1.0
+});
+L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{
+  attribution:'&copy; OpenStreetMap &copy; CartoDB'
+}).addTo(leafletMap);
+
+const legendCtrl=L.control({position:'bottomleft'});
+legendCtrl.onAdd=()=>{
+  const d=L.DomUtil.create('div','legend');
+  d.innerHTML='<b>Stage</b>'+Object.entries(STAGE_COLORS).map(([s,c])=>
+    `<div><span class="dot" style="background:${c}"></span>${s}</div>`).join('');
+  return d;
+};
+legendCtrl.addTo(leafletMap);
+
+let mapMarkers=[];
+function updateMap(){
+  mapMarkers.forEach(m=>leafletMap.removeLayer(m));
+  mapMarkers=[];
+  const filtered=projects.filter(p=>
+    msState['map_name'].has(p.name)&&msState['map_stage'].has(p.stage)&&msState['map_region'].has(p.region)&&
+    msState['map_mineral'].has(p.mineral)&&msState['map_controller'].has(p.controller)
+  );
+  document.getElementById('map-count').textContent=`${filtered.length} of ${projects.length} projects`;
+  filtered.forEach(p=>{
+    if(p.lat==null||p.lon==null) return;
+    const color=STAGE_COLORS[p.stage]||'#888';
+    const m=L.circleMarker([p.lat,p.lon],{
+      radius:8,color:'white',weight:1.5,fillColor:color,fillOpacity:0.9
+    });
+    m.bindTooltip(`<div style="font-family:Arial,sans-serif;font-size:13px;min-width:190px">
+      <b style="font-size:14px">${p.name}</b><hr style="margin:4px 0">
+      <b>Region:</b> ${p.region||'N/A'}<br>
+      <b>Stage:</b> ${p.stage||'N/A'}<br>
+      <b>Controller:</b> ${p.controller||'N/A'}<br>
+      <b>Mineral:</b> ${p.mineral||'N/A'}<br>
+      <b>CAPEX:</b> ${p.capex||'N/A'}
+    </div>`,{maxWidth:300});
+    m.addTo(leafletMap);
+    mapMarkers.push(m);
+  });
+}
+updateMap();
+
+// ---- TABLE ----
+function tableRow(p){
+  return{
+    name:p.name,region:p.region,stage:p.stage,controller:p.controller,
+    mineral:p.mineral,capex:p.capex,finance_index:computeFinanceIndex(p)
+  };
+}
+
+let tabulatorTable;
+function updateTable(){
+  if(!tabulatorTable) return;
+  const filtered=projects.filter(p=>
+    msState['tbl_name'].has(p.name)&&msState['tbl_stage'].has(p.stage)&&msState['tbl_region'].has(p.region)&&
+    msState['tbl_mineral'].has(p.mineral)&&msState['tbl_controller'].has(p.controller)
+  );
+  document.getElementById('tbl-count').textContent=`${filtered.length} of ${projects.length} projects`;
+  tabulatorTable.setData(filtered.map(tableRow));
+}
+
+// Build table filters first so msState keys exist when tableBuilt fires
+buildMS('tbl-name',       'name',       'Project ',    'tbl_', updateTable);
+buildMS('tbl-stage',      'stage',      'Stage ',      'tbl_', updateTable);
+buildMS('tbl-region',     'region',     'Region ',     'tbl_', updateTable);
+buildMS('tbl-mineral',    'mineral',    'Mineral ',    'tbl_', updateTable);
+buildMS('tbl-controller', 'controller', 'Controller ', 'tbl_', updateTable);
+
+// Finance Index formula (placeholder — Controller Relationship data pending):
+// FI = CAPEX_numeric * w1 + Stage_score * w2 + Controller_Relationship * w3
+tabulatorTable=new Tabulator("#projects-table",{
+  data:[],
+  layout:"fitColumns",
+  height:"100%",
+  columns:[
+    {title:"Project Name",       field:"name",          minWidth:160},
+    {title:"Region",             field:"region",        minWidth:110},
+    {title:"Stage",              field:"stage",         minWidth:140},
+    {title:"Controller",         field:"controller",    minWidth:200},
+    {title:"Mineral",            field:"mineral",       minWidth:130},
+    {title:"CAPEX",              field:"capex",         minWidth:160},
+    {title:"Finance Index", field:"finance_index", minWidth:130,
+      formatter:function(cell){
+        const v=cell.getValue();
+        if(v===''||v===null||v===undefined) return '—';
+        let bg,label;
+        if(v>=67){bg='#2dc653';label='High';}
+        else if(v>=33){bg='#f4a261';label='Med';}
+        else{bg='#e76f51';label='Low';}
+        return '<span style="background:'+bg+';color:white;padding:2px 10px;border-radius:10px;font-size:0.8rem;font-weight:600">'+v+' · '+label+'</span>';
+      },
+      sorter:'number'},
+  ],
+  rowFormatter:row=>{
+    const c=STAGE_COLORS[row.getData().stage];
+    if(c) row.getElement().style.borderLeft=`4px solid ${c}`;
+  }
+});
+tabulatorTable.on("tableBuilt",updateTable);
+
+function buildHighlights(){
+  const topProjects=[];
+  for(let i=0;i<projects.length;i++){
+    const fi=computeFinanceIndex(projects[i]);
+    if(fi>=50) topProjects.push({p:projects[i],fi:fi});
+  }
+  topProjects.sort(function(a,b){return b.fi-a.fi;});
+  document.getElementById('hl-count').textContent=topProjects.length+' projects with Finance Index ≥ 50';
+  const cards=document.getElementById('hl-cards');
+  cards.innerHTML='';
+  for(let j=0;j<topProjects.length;j++){
+    const p=topProjects[j].p,fi=topProjects[j].fi;
+    const cls=fi>=67?'green':'orange';
+    const d=document.createElement('div');
+    d.className='hl-card';
+    d.innerHTML=
+      '<div class="hl-card-body">'+
+        '<div class="hl-card-name">'+p.name+'</div>'+
+        '<div class="hl-card-meta">'+p.stage+'&nbsp;&middot;&nbsp;'+p.mineral+(p.capex?'&nbsp;&middot;&nbsp;'+p.capex:'')+'</div>'+
+        (p.controller?'<div class="hl-card-ctrl">'+p.controller+'</div>':'')+
+      '</div>'+
+      '<span class="hl-fi '+cls+'">'+fi+'</span>';
+    cards.appendChild(d);
+  }
+  const cl=CHANGELOG;
+  document.getElementById('hl-rundate').textContent=cl.run_date?'Data as of '+cl.run_date:'Pipeline not yet run';
+  const wrap=document.getElementById('hl-changes');
+  wrap.innerHTML='';
+  function makeSection(title,items,renderFn){
+    const sec=document.createElement('div');
+    sec.className='hl-section';
+    sec.innerHTML='<div class="hl-section-hdr">'+title+' ('+items.length+')</div>';
+    if(!items.length){
+      sec.innerHTML+='<div class="hl-empty">None since last update</div>';
+    } else {
+      for(let k=0;k<items.length;k++){
+        const div=document.createElement('div');
+        div.className='hl-change-item';
+        div.innerHTML=renderFn(items[k]);
+        sec.appendChild(div);
+      }
+    }
+    wrap.appendChild(sec);
+  }
+  makeSection('New Projects',cl.new_projects,function(name){
+    return '<div class="hl-change-name">'+name+'</div>';
+  });
+  makeSection('Stage Changes',cl.stage_changes,function(sc){
+    return '<div class="hl-change-name">'+sc.name+'</div>'+
+           '<div class="hl-change-detail">'+sc.from+' &#8594; '+sc.to+'</div>';
+  });
+  makeSection('CAPEX Updates',cl.capex_updates,function(cu){
+    return '<div class="hl-change-name">'+cu.name+'</div>'+
+           '<div class="hl-change-detail">'+(cu.from||'None')+' &#8594; '+cu.to+'</div>';
+  });
+}
+buildHighlights();
+</script>
+
+</body></html>
